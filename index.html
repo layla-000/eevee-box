@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#17324d" />
+  <title>Eevee Box</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div><p class="eyebrow">PERSONAL POKÉMON DATABASE</p><h1>Eevee Box</h1></div>
+    <div class="sync"><span id="syncDot" class="dot"></span><span id="syncText">로컬 모드</span></div>
+  </header>
+  <main>
+    <section class="toolbar">
+      <label class="search"><span>검색</span><input id="searchInput" placeholder="이름, 종류, 타입" /></label>
+      <label><span>타입</span><select id="typeFilter"><option value="">전체</option></select></label>
+      <button id="addButton" class="primary">+ 포켓몬 추가</button>
+      <button id="syncButton">동기화</button>
+    </section>
+    <section class="summary"><strong id="countText">0마리</strong><span>카드의 + / − 버튼으로 레벨을 바로 바꿀 수 있어요.</span></section>
+    <section id="grid" class="grid" aria-live="polite"></section>
+  </main>
+
+  <dialog id="editor">
+    <form id="editorForm" method="dialog">
+      <div class="dialog-head"><h2 id="editorTitle">포켓몬 수정</h2><button type="button" id="closeEditor" class="icon">×</button></div>
+      <input id="editId" type="hidden" />
+      <div class="form-grid">
+        <label>별명<input id="editNickname" required /></label>
+        <label>종류<input id="editSpecies" required /></label>
+        <label>레벨<input id="editLevel" type="number" min="1" max="100" required /></label>
+        <label>타입<input id="editTypes" placeholder="예: 물, 땅" /></label>
+        <label>특성<input id="editAbility" /></label>
+        <label>테라 타입<input id="editTera" /></label>
+        <label>성격<input id="editNature" /></label>
+        <label>지닌 도구<input id="editItem" /></label>
+      </div>
+      <label>특성 효과<textarea id="editAbilityEffect" rows="2"></textarea></label>
+      <fieldset><legend>현재 기술 4개</legend><div id="moveSelects" class="move-selects"></div></fieldset>
+      <details><summary>배울 수 있는 기술 검색</summary><input id="moveSearch" placeholder="기술명 검색" /><div id="moveLibrary" class="move-library"></div></details>
+      <label>메모<textarea id="editNotes" rows="3"></textarea></label>
+      <div class="dialog-actions"><button type="button" id="deleteButton" class="danger">삭제</button><button type="submit" class="primary">저장</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="config.js"></script><script src="app.js"></script>
+</body></html>

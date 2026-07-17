@@ -1,0 +1,9 @@
+const SHEET_NAME = 'Pokemon';
+function doGet(){return json_({ok:true,message:'Eevee Box API'});}
+function doPost(e){try{const body=JSON.parse(e.postData.contents||'{}');switch(body.action){case 'get_all':return getAll_();case 'save':return save_(body.record);case 'remove':return remove_(body.id);case 'seed':return seed_(body.records||[]);default:throw new Error('Unknown action: '+body.action)}}catch(err){return json_({ok:false,error:String(err.message||err)})}}
+function sheet_(){const ss=SpreadsheetApp.getActive();let sh=ss.getSheetByName(SHEET_NAME);if(!sh){sh=ss.insertSheet(SHEET_NAME);sh.appendRow(['id','json','updatedAt']);sh.setFrozenRows(1)}return sh}
+function getAll_(){const sh=sheet_(),last=sh.getLastRow();if(last<2)return json_({ok:true,records:[]});const rows=sh.getRange(2,1,last-1,3).getValues();return json_({ok:true,records:rows.map(r=>JSON.parse(r[1])).filter(Boolean)})}
+function save_(record){if(!record||!record.id)throw new Error('record.id is required');const sh=sheet_(),last=sh.getLastRow(),ids=last<2?[]:sh.getRange(2,1,last-1,1).getValues().flat();const idx=ids.indexOf(record.id),row=idx<0?last+1:idx+2;record.updatedAt=new Date().toISOString();sh.getRange(row,1,1,3).setValues([[record.id,JSON.stringify(record),record.updatedAt]]);return json_({ok:true,record})}
+function remove_(id){const sh=sheet_(),last=sh.getLastRow();if(last>=2){const ids=sh.getRange(2,1,last-1,1).getValues().flat(),idx=ids.indexOf(id);if(idx>=0)sh.deleteRow(idx+2)}return json_({ok:true})}
+function seed_(records){const sh=sheet_();if(sh.getLastRow()>1)return getAll_();const now=new Date().toISOString(),rows=records.map(r=>[r.id,JSON.stringify(r),now]);if(rows.length)sh.getRange(2,1,rows.length,3).setValues(rows);return json_({ok:true,count:rows.length})}
+function json_(obj){return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON)}

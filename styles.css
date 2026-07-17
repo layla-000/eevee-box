@@ -194,3 +194,60 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
   .opponent-form-grid{grid-template-columns:1fr 92px}
   .preview-data{grid-template-columns:1fr}
 }
+
+
+/* Opponent reference dropdowns */
+.opponent-slot{gap:16px}
+.reference-detail,
+.move-reference-detail{
+  padding:10px 12px;
+  border:1px solid #e0e7eb;
+  border-radius:11px;
+  background:#f7fafb;
+  color:#526571;
+  font-size:.78rem;
+  line-height:1.5;
+}
+.reference-detail small,
+.move-reference-detail small{
+  display:block;
+  margin-top:5px;
+  color:#7b8992;
+  font-size:.7rem;
+}
+.opponent-moves-block{
+  display:grid;
+  gap:9px;
+  padding-top:2px;
+}
+.opponent-moves-title{
+  font-size:.75rem;
+  font-weight:800;
+  color:var(--muted, #637282);
+}
+.opponent-move-slots{
+  display:grid;
+  gap:10px;
+}
+.opponent-move-row{
+  display:grid;
+  gap:7px;
+}
+.move-reference-head{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-bottom:6px;
+}
+.move-reference-head span{
+  display:inline-flex;
+  padding:3px 6px;
+  border-radius:999px;
+  background:#eaf1f4;
+  color:#3f5968;
+  font-size:.68rem;
+  font-weight:800;
+}
+.opponent-slot select{
+  width:100%;
+}

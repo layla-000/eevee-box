@@ -3,6 +3,9 @@ const POKEMON_KEY = 'EEVEE_BOX_DATA_V1';
 const BATTLE_KEY = 'EEVEE_BOX_BATTLE_V1';
 
 let pokemon = [];
+let abilities = [];
+let items = [];
+let moves = [];
 let battle = emptyBattle();
 
 const $ = selector => document.querySelector(selector);
@@ -20,7 +23,14 @@ function emptyBattle(){
 }
 
 function emptyOpponent(){
-  return {name:'', level:'', types:'', ability:'', item:'', moves:''};
+  return {
+    name:'',
+    level:'',
+    types:'',
+    ability:'',
+    item:'',
+    moves:['', '', '', '']
+  };
 }
 
 function say(message){
@@ -59,6 +69,25 @@ async function api(action, payload = {}){
 
 async function load(){
   setSync(false, '불러오는 중');
+
+  [abilities, items, moves] = await Promise.all([
+    fetch('abilities.json').then(response => {
+      if (!response.ok) throw new Error(`abilities.json ${response.status}`);
+      return response.json();
+    }),
+    fetch('items.json').then(response => {
+      if (!response.ok) throw new Error(`items.json ${response.status}`);
+      return response.json();
+    }),
+    fetch('moves.json').then(response => {
+      if (!response.ok) throw new Error(`moves.json ${response.status}`);
+      return response.json();
+    })
+  ]);
+
+  abilities.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  moves.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   const localPokemon = JSON.parse(localStorage.getItem(POKEMON_KEY) || 'null');
   if (Array.isArray(localPokemon)) {
@@ -100,7 +129,17 @@ function normalizeBattle(value){
     myTeam: [...(value.myTeam || []), '', '', ''].slice(0,3),
     opponentTeam: [...(value.opponentTeam || []), emptyOpponent(), emptyOpponent(), emptyOpponent()]
       .slice(0,3)
-      .map(item => ({...emptyOpponent(), ...(item || {})}))
+      .map(item => {
+        const normalized = {...emptyOpponent(), ...(item || {})};
+        if (typeof normalized.moves === 'string'){
+          normalized.moves = normalized.moves
+            .split(',')
+            .map(value => value.trim())
+            .filter(Boolean);
+        }
+        normalized.moves = [...(normalized.moves || []), '', '', '', ''].slice(0,4);
+        return normalized;
+      })
   };
 }
 
@@ -183,27 +222,147 @@ function renderOpponentTeam(){
     fragment.querySelector('.slot-number').textContent = index + 1;
     const record = battle.opponentTeam[index];
 
-    const fields = {
-      '.opp-name':'name',
-      '.opp-level':'level',
-      '.opp-types':'types',
-      '.opp-ability':'ability',
-      '.opp-item':'item',
-      '.opp-moves':'moves'
-    };
+    const nameInput = fragment.querySelector('.opp-name');
+    const levelInput = fragment.querySelector('.opp-level');
+    const typesInput = fragment.querySelector('.opp-types');
+    const abilitySelect = fragment.querySelector('.opp-ability');
+    const itemSelect = fragment.querySelector('.opp-item');
+    const abilityDetail = fragment.querySelector('.opp-ability-detail');
+    const itemDetail = fragment.querySelector('.opp-item-detail');
 
-    Object.entries(fields).forEach(([selector, key]) => {
-      const input = fragment.querySelector(selector);
-      input.value = record[key] ?? '';
-      input.addEventListener('input', () => {
-        battle.opponentTeam[index][key] = input.value;
+    nameInput.value = record.name || '';
+    levelInput.value = record.level || '';
+    typesInput.value = record.types || '';
+
+    fillReferenceSelect(
+      abilitySelect,
+      abilities,
+      record.ability,
+      '특성 선택'
+    );
+    fillReferenceSelect(
+      itemSelect,
+      items,
+      record.item,
+      '도구 없음'
+    );
+
+    updateAbilityDetail(abilityDetail, record.ability);
+    updateItemDetail(itemDetail, record.item);
+
+    nameInput.addEventListener('input', () => {
+      record.name = nameInput.value;
+      persistLocal();
+      updateCounts();
+    });
+    levelInput.addEventListener('input', () => {
+      record.level = levelInput.value;
+      persistLocal();
+    });
+    typesInput.addEventListener('input', () => {
+      record.types = typesInput.value;
+      persistLocal();
+    });
+    abilitySelect.addEventListener('change', () => {
+      record.ability = abilitySelect.value;
+      updateAbilityDetail(abilityDetail, record.ability);
+      persistLocal();
+    });
+    itemSelect.addEventListener('change', () => {
+      record.item = itemSelect.value;
+      updateItemDetail(itemDetail, record.item);
+      persistLocal();
+    });
+
+    const moveRows = [...fragment.querySelectorAll('.opponent-move-row')];
+    moveRows.forEach((row, moveIndex) => {
+      const select = row.querySelector('.opp-move-select');
+      const detail = row.querySelector('.move-reference-detail');
+      fillMoveSelect(select, record.moves[moveIndex], moveIndex);
+      updateMoveDetail(detail, record.moves[moveIndex]);
+
+      select.addEventListener('change', () => {
+        record.moves[moveIndex] = select.value;
+        updateMoveDetail(detail, select.value);
         persistLocal();
-        updateCounts();
       });
     });
 
     container.appendChild(fragment);
   }
+}
+
+function fillReferenceSelect(select, records, selectedValue, emptyLabel){
+  const names = records.map(record => record.name);
+  if (selectedValue && !names.includes(selectedValue)){
+    names.unshift(selectedValue);
+  }
+
+  select.innerHTML = [
+    `<option value="">${escapeHtml(emptyLabel)}</option>`,
+    ...names.map(name =>
+      `<option value="${escapeHtml(name)}"${name === selectedValue ? ' selected' : ''}>${escapeHtml(name)}</option>`
+    )
+  ].join('');
+}
+
+function fillMoveSelect(select, selectedValue, index){
+  const names = moves.map(record => record.name);
+  if (selectedValue && !names.includes(selectedValue)){
+    names.unshift(selectedValue);
+  }
+
+  select.innerHTML = [
+    `<option value="">기술 ${index + 1} 선택</option>`,
+    ...names.map(name =>
+      `<option value="${escapeHtml(name)}"${name === selectedValue ? ' selected' : ''}>${escapeHtml(name)}</option>`
+    )
+  ].join('');
+}
+
+function updateAbilityDetail(element, name){
+  const record = abilities.find(item => item.name === name);
+  element.textContent = record?.description || '특성을 선택하면 효과가 표시돼요.';
+}
+
+function updateItemDetail(element, name){
+  const record = items.find(item => item.name === name);
+  if (!record){
+    element.textContent = '도구를 선택하면 효과가 표시돼요.';
+    return;
+  }
+
+  const meta = [record.price, record.limit].filter(Boolean).join(' · ');
+  element.innerHTML = `
+    <div>${escapeHtml(record.description || '효과 정보 없음')}</div>
+    ${meta ? `<small>${escapeHtml(meta)}</small>` : ''}
+  `;
+}
+
+function updateMoveDetail(element, name){
+  const record = moves.find(item => item.name === name);
+  if (!record){
+    element.textContent = '기술을 선택하면 효과가 표시돼요.';
+    return;
+  }
+
+  const stats = [
+    record.type,
+    record.category,
+    `위력 ${record.power || '-'}`,
+    `명중 ${record.accuracy || '-'}`,
+    `PP ${record.pp || '-'}`
+  ].filter(Boolean);
+
+  const flags = Array.isArray(record.flags) && record.flags.length
+    ? ` · ${record.flags.join(' · ')}`
+    : '';
+
+  element.innerHTML = `
+    <div class="move-reference-head">${stats.map(value => `<span>${escapeHtml(value)}</span>`).join('')}</div>
+    <div>${escapeHtml(record.description || '효과 정보 없음')}</div>
+    ${record.target ? `<small>대상 ${escapeHtml(record.target)}${escapeHtml(flags)}</small>` : ''}
+  `;
 }
 
 function readPageValues(){

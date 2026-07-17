@@ -78,15 +78,51 @@
   </template>
 
   <template id="opponentSlotTemplate">
-    <article class="battle-slot">
+    <article class="battle-slot opponent-slot">
       <div class="slot-number"></div>
+
       <div class="opponent-form-grid">
         <label><span>이름 / 종류</span><input class="opp-name" placeholder="예: 부란다" /></label>
         <label><span>레벨</span><input class="opp-level" type="number" min="1" max="100" placeholder="45" /></label>
-        <label><span>타입</span><input class="opp-types" placeholder="예: 격투, 악" /></label>
-        <label><span>특성</span><input class="opp-ability" placeholder="예: 철주먹" /></label>
-        <label><span>지닌 도구</span><input class="opp-item" placeholder="예: 달인의띠" /></label>
-        <label class="wide"><span>기술</span><input class="opp-moves" placeholder="불릿펀치, 드레인펀치, 도발, DD래리어트" /></label>
+        <label class="wide"><span>타입</span><input class="opp-types" placeholder="예: 격투, 악" /></label>
+
+        <label class="wide">
+          <span>특성</span>
+          <select class="opp-ability">
+            <option value="">특성 선택</option>
+          </select>
+        </label>
+        <div class="reference-detail wide opp-ability-detail">특성을 선택하면 효과가 표시돼요.</div>
+
+        <label class="wide">
+          <span>지닌 도구</span>
+          <select class="opp-item">
+            <option value="">도구 없음</option>
+          </select>
+        </label>
+        <div class="reference-detail wide opp-item-detail">도구를 선택하면 효과가 표시돼요.</div>
+      </div>
+
+      <div class="opponent-moves-block">
+        <div class="opponent-moves-title">기술 4개</div>
+        <div class="opponent-move-slots">
+          <div class="opponent-move-row">
+            <select class="opp-move-select"><option value="">기술 1 선택</option></select>
+            <div class="move-reference-detail">기술을 선택하면 효과가 표시돼요.</div>
+          </div>
+          <div class="opponent-move-row">
+            <select class="opp-move-select"><option value="">기술 2 선택</option></select>
+            <div class="move-reference-detail">기술을 선택하면 효과가 표시돼요.</div>
+          </div>
+          <div class="opponent-move-row">
+            <select class="opp-move-select"><option value="">기술 3 선택</option></select>
+            <div class="move-reference-detail">기술을 선택하면 효과가 표시돼요.</div>
+          </div>
+          <div class="opponent-move-row">
+            <select class="opp-move-select"><option value="">기술 4 선택</option></select>
+            <div class="move-reference-detail">기술을 선택하면 효과가 표시돼요.</div>
+          </div>
+        </div>
       </div>
     </article>
   </template>

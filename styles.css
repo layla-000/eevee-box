@@ -251,3 +251,71 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .opponent-slot select{
   width:100%;
 }
+
+
+/* Battle catalog and detailed effects */
+.field-caption{
+  display:block;
+  margin-bottom:6px;
+  font-size:.75rem;
+  font-weight:800;
+  color:var(--muted, #637282);
+}
+.auto-field{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  min-height:42px;
+  padding:10px 12px;
+  border:1px solid #dce4ea;
+  border-radius:11px;
+  background:#f7fafb;
+}
+.empty-auto-field{
+  color:#89959d;
+  font-size:.78rem;
+}
+.my-reference-block{
+  display:grid;
+  gap:5px;
+  padding:11px 12px;
+  border:1px solid #e0e7eb;
+  border-radius:11px;
+  background:#fff;
+}
+.my-reference-title{
+  font-size:.76rem;
+  font-weight:850;
+  color:#263f50;
+}
+.my-reference-effect{
+  color:#536671;
+  font-size:.75rem;
+  line-height:1.48;
+}
+.my-reference-block small,
+.my-move-effect-card small{
+  color:#7b8992;
+  font-size:.69rem;
+}
+.my-move-effects{
+  display:grid;
+  gap:8px;
+}
+.my-move-effect-card{
+  display:grid;
+  gap:6px;
+  padding:11px 12px;
+  border:1px solid #e0e7eb;
+  border-radius:11px;
+  background:#f8fafb;
+}
+.my-move-effect-head{
+  display:grid;
+  gap:6px;
+}
+.my-move-effect-head strong{
+  color:#223d4e;
+  font-size:.85rem;
+}

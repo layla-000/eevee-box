@@ -3,6 +3,7 @@ const POKEMON_KEY = 'EEVEE_BOX_DATA_V1';
 const BATTLE_KEY = 'EEVEE_BOX_BATTLE_V1';
 
 let pokemon = [];
+let pokemonCatalog = [];
 let abilities = [];
 let items = [];
 let moves = [];
@@ -24,6 +25,7 @@ function emptyBattle(){
 
 function emptyOpponent(){
   return {
+    catalogId:'',
     name:'',
     level:'',
     types:'',
@@ -70,7 +72,11 @@ async function api(action, payload = {}){
 async function load(){
   setSync(false, '불러오는 중');
 
-  [abilities, items, moves] = await Promise.all([
+  [pokemonCatalog, abilities, items, moves] = await Promise.all([
+    fetch('pokemon-catalog.json').then(response => {
+      if (!response.ok) throw new Error(`pokemon-catalog.json ${response.status}`);
+      return response.json();
+    }),
     fetch('abilities.json').then(response => {
       if (!response.ok) throw new Error(`abilities.json ${response.status}`);
       return response.json();
@@ -85,6 +91,7 @@ async function load(){
     })
   ]);
 
+  pokemonCatalog.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   abilities.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   moves.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
@@ -192,7 +199,10 @@ function updateMyPreview(slot, id){
     return;
   }
 
-  const moves = (record.currentMoves || []).filter(Boolean);
+  const currentMoves = (record.currentMoves || []).filter(Boolean);
+  const abilityRecord = abilities.find(item => item.name === record.ability);
+  const itemRecord = items.find(item => item.name === record.heldItem);
+
   preview.className = 'selected-pokemon-preview';
   preview.innerHTML = `
     <div class="preview-title">
@@ -204,11 +214,55 @@ function updateMyPreview(slot, id){
       ${(record.types || []).map(type => `<span class="type-pill">${escapeHtml(type)}</span>`).join('')}
       ${record.teraType ? `<span class="tera-pill">테라 ${escapeHtml(record.teraType)}</span>` : ''}
     </div>
-    <dl class="preview-data">
-      <div><dt>특성</dt><dd>${escapeHtml(record.ability || '—')}</dd></div>
-      <div><dt>도구</dt><dd>${escapeHtml(record.heldItem || '없음')}</dd></div>
-    </dl>
-    <div class="preview-moves">${moves.length ? moves.map(move => `<span>${escapeHtml(move)}</span>`).join('') : '<em>현재 기술 없음</em>'}</div>
+
+    <div class="my-reference-block">
+      <div class="my-reference-title">특성 · ${escapeHtml(record.ability || '없음')}</div>
+      <div class="my-reference-effect">${escapeHtml(abilityRecord?.description || record.abilityEffect || '효과 정보 없음')}</div>
+    </div>
+
+    <div class="my-reference-block">
+      <div class="my-reference-title">도구 · ${escapeHtml(record.heldItem || '없음')}</div>
+      <div class="my-reference-effect">${escapeHtml(itemRecord?.description || '효과 정보 없음')}</div>
+      ${itemRecord ? `<small>${escapeHtml([itemRecord.price, itemRecord.limit].filter(Boolean).join(' · '))}</small>` : ''}
+    </div>
+
+    <div class="my-move-effects">
+      ${currentMoves.length
+        ? currentMoves.map(moveName => {
+            const move = moves.find(item => item.name === moveName);
+            if (!move){
+              return `
+                <div class="my-move-effect-card">
+                  <div class="my-move-effect-head"><strong>${escapeHtml(moveName)}</strong></div>
+                  <div class="my-reference-effect">효과 정보 없음</div>
+                </div>
+              `;
+            }
+
+            const stats = [
+              move.type,
+              move.category,
+              `위력 ${move.power || '-'}`,
+              `명중 ${move.accuracy || '-'}`,
+              `PP ${move.pp || '-'}`
+            ];
+
+            return `
+              <div class="my-move-effect-card">
+                <div class="my-move-effect-head">
+                  <strong>${escapeHtml(moveName)}</strong>
+                  <div class="move-reference-head">
+                    ${stats.map(value => `<span>${escapeHtml(value)}</span>`).join('')}
+                  </div>
+                </div>
+                <div class="my-reference-effect">${escapeHtml(move.description || '효과 정보 없음')}</div>
+                ${move.target ? `<small>대상 ${escapeHtml(move.target)}</small>` : ''}
+              </div>
+            `;
+          }).join('')
+        : '<div class="my-reference-effect">현재 기술 없음</div>'
+      }
+    </div>
   `;
 }
 
@@ -218,56 +272,76 @@ function renderOpponentTeam(){
 
   for (let index = 0; index < 3; index += 1){
     const fragment = $('#opponentSlotTemplate').content.cloneNode(true);
-    const slot = fragment.querySelector('.battle-slot');
     fragment.querySelector('.slot-number').textContent = index + 1;
     const record = battle.opponentTeam[index];
 
-    const nameInput = fragment.querySelector('.opp-name');
+    const pokemonSelect = fragment.querySelector('.opp-pokemon');
     const levelInput = fragment.querySelector('.opp-level');
-    const typesInput = fragment.querySelector('.opp-types');
+    const typesDisplay = fragment.querySelector('.opp-types-display');
     const abilitySelect = fragment.querySelector('.opp-ability');
     const itemSelect = fragment.querySelector('.opp-item');
     const abilityDetail = fragment.querySelector('.opp-ability-detail');
     const itemDetail = fragment.querySelector('.opp-item-detail');
 
-    nameInput.value = record.name || '';
-    levelInput.value = record.level || '';
-    typesInput.value = record.types || '';
+    fillPokemonCatalogSelect(pokemonSelect, record.catalogId, record.name);
 
-    fillReferenceSelect(
-      abilitySelect,
-      abilities,
-      record.ability,
-      '특성 선택'
-    );
-    fillReferenceSelect(
-      itemSelect,
-      items,
-      record.item,
-      '도구 없음'
-    );
+    const selectedPokemon = findCatalogPokemon(record.catalogId, record.name);
+    if (selectedPokemon){
+      record.catalogId = selectedPokemon.id;
+      record.name = selectedPokemon.name;
+      record.types = selectedPokemon.types.join(', ');
+      if (record.ability && !selectedPokemon.abilities.includes(record.ability)){
+        record.ability = '';
+      }
+    }
+
+    levelInput.value = record.level || '';
+    updateOpponentTypes(typesDisplay, selectedPokemon);
+    fillPokemonAbilitySelect(abilitySelect, selectedPokemon, record.ability);
+    fillReferenceSelect(itemSelect, items, record.item, '도구 없음');
 
     updateAbilityDetail(abilityDetail, record.ability);
     updateItemDetail(itemDetail, record.item);
 
-    nameInput.addEventListener('input', () => {
-      record.name = nameInput.value;
+    pokemonSelect.addEventListener('change', () => {
+      const selected = pokemonCatalog.find(item => item.id === pokemonSelect.value);
+
+      if (!selected){
+        record.catalogId = '';
+        record.name = '';
+        record.types = '';
+        record.ability = '';
+        updateOpponentTypes(typesDisplay, null);
+        fillPokemonAbilitySelect(abilitySelect, null, '');
+        updateAbilityDetail(abilityDetail, '');
+        persistLocal();
+        updateCounts();
+        return;
+      }
+
+      record.catalogId = selected.id;
+      record.name = selected.name;
+      record.types = selected.types.join(', ');
+      record.ability = '';
+
+      updateOpponentTypes(typesDisplay, selected);
+      fillPokemonAbilitySelect(abilitySelect, selected, '');
+      updateAbilityDetail(abilityDetail, '');
       persistLocal();
       updateCounts();
     });
+
     levelInput.addEventListener('input', () => {
       record.level = levelInput.value;
       persistLocal();
     });
-    typesInput.addEventListener('input', () => {
-      record.types = typesInput.value;
-      persistLocal();
-    });
+
     abilitySelect.addEventListener('change', () => {
       record.ability = abilitySelect.value;
       updateAbilityDetail(abilityDetail, record.ability);
       persistLocal();
     });
+
     itemSelect.addEventListener('change', () => {
       record.item = itemSelect.value;
       updateItemDetail(itemDetail, record.item);
@@ -290,6 +364,50 @@ function renderOpponentTeam(){
 
     container.appendChild(fragment);
   }
+}
+
+function fillPokemonCatalogSelect(select, selectedId, selectedName){
+  const selectedPokemon = findCatalogPokemon(selectedId, selectedName);
+  const selectedValue = selectedPokemon?.id || '';
+
+  select.innerHTML = [
+    '<option value="">포켓몬 선택</option>',
+    ...pokemonCatalog.map(record =>
+      `<option value="${escapeHtml(record.id)}"${record.id === selectedValue ? ' selected' : ''}>${escapeHtml(record.name)}</option>`
+    )
+  ].join('');
+}
+
+function findCatalogPokemon(id, name){
+  return pokemonCatalog.find(item => item.id === id)
+    || pokemonCatalog.find(item => item.name === name)
+    || null;
+}
+
+function fillPokemonAbilitySelect(select, pokemonRecord, selectedValue){
+  const names = pokemonRecord?.abilities || [];
+
+  select.innerHTML = [
+    '<option value="">특성 선택</option>',
+    ...names.map(name =>
+      `<option value="${escapeHtml(name)}"${name === selectedValue ? ' selected' : ''}>${escapeHtml(name)}</option>`
+    )
+  ].join('');
+
+  select.disabled = !pokemonRecord;
+}
+
+function updateOpponentTypes(element, pokemonRecord){
+  if (!pokemonRecord){
+    element.className = 'auto-field opp-types-display empty-auto-field';
+    element.textContent = '포켓몬을 선택하면 자동으로 표시돼요.';
+    return;
+  }
+
+  element.className = 'auto-field opp-types-display';
+  element.innerHTML = pokemonRecord.types
+    .map(type => `<span class="type-pill">${escapeHtml(type)}</span>`)
+    .join('');
 }
 
 function fillReferenceSelect(select, records, selectedValue, emptyLabel){

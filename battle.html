@@ -82,9 +82,17 @@
       <div class="slot-number"></div>
 
       <div class="opponent-form-grid">
-        <label><span>이름 / 종류</span><input class="opp-name" placeholder="예: 부란다" /></label>
+        <label class="wide">
+          <span>포켓몬</span>
+          <select class="opp-pokemon">
+            <option value="">포켓몬 선택</option>
+          </select>
+        </label>
         <label><span>레벨</span><input class="opp-level" type="number" min="1" max="100" placeholder="45" /></label>
-        <label class="wide"><span>타입</span><input class="opp-types" placeholder="예: 격투, 악" /></label>
+        <div class="wide">
+          <span class="field-caption">타입</span>
+          <div class="auto-field opp-types-display">포켓몬을 선택하면 자동으로 표시돼요.</div>
+        </div>
 
         <label class="wide">
           <span>특성</span>

@@ -1,0 +1,59 @@
+:root{
+  --move-category-status:#5F6B7A;
+  --move-category-special:#3B82F6;
+  --move-category-physical:#DC6B3F;
+}
+
+.move-category-colored{
+  --move-category-color:#5F6B7A;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:23px;
+  padding:4px 9px;
+  border:0 !important;
+  border-radius:999px;
+  background:var(--move-category-color) !important;
+  color:#fff !important;
+  font-size:.72rem;
+  font-weight:850;
+  line-height:1;
+  text-shadow:0 1px 1px rgba(0,0,0,.18);
+}
+
+.move-category-colored::before{
+  margin-right:5px;
+  font-size:.72em;
+  opacity:.9;
+}
+
+.move-category-colored[data-category="변화"]::before{
+  content:"○";
+}
+
+.move-category-colored[data-category="특수"]::before{
+  content:"✦";
+}
+
+.move-category-colored[data-category="물리"]::before{
+  content:"◆";
+}
+
+/* 기술 상세 카드에는 타입색과 별도로 분류색 얇은 하단선을 표시해요. */
+.move-category-card{
+  --move-category-color:#5F6B7A;
+  box-shadow:inset 0 -3px 0 var(--move-category-color);
+}
+
+/* 드롭다운 자체는 배경을 칠하지 않고 분류색 포인트만 적용해 타입색과 구분해요. */
+select.move-category-aware{
+  border-right:6px solid var(--selected-category-color, var(--line)) !important;
+}
+
+@media (max-width:700px){
+  .move-category-colored{
+    min-height:22px;
+    padding:4px 8px;
+    font-size:.68rem;
+  }
+}

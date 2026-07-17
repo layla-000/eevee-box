@@ -32,18 +32,22 @@
         <label>종류<input id="editSpecies" required /></label>
         <label>레벨<input id="editLevel" type="number" min="1" max="100" required /></label>
         <label>타입<input id="editTypes" placeholder="예: 물, 땅" /></label>
-        <label>특성<input id="editAbility" /></label>
+        <label>특성<input id="editAbility" list="abilityList" autocomplete="off" /></label>
         <label>테라 타입<input id="editTera" /></label>
         <label>성격<input id="editNature" /></label>
-        <label>지닌 도구<input id="editItem" /></label>
+        <label>지닌 도구<input id="editItem" list="itemList" autocomplete="off" /></label>
       </div>
-      <label>특성 효과<textarea id="editAbilityEffect" rows="2"></textarea></label>
+      <datalist id="abilityList"></datalist>
+      <datalist id="itemList"></datalist>
+      <label>특성 효과<textarea id="editAbilityEffect" rows="2" readonly></textarea></label>
+      <label>도구 효과<textarea id="editItemEffect" rows="2" readonly></textarea></label>
       <fieldset><legend>현재 기술 4개</legend><div id="moveSelects" class="move-selects"></div></fieldset>
-      <details><summary>배울 수 있는 기술 검색</summary><input id="moveSearch" placeholder="기술명 검색" /><div id="moveLibrary" class="move-library"></div></details>
+      <details><summary>배울 수 있는 기술 검색</summary><input id="moveSearch" placeholder="기술명, 타입, 효과 검색" /><div id="moveLibrary" class="move-library"></div></details>
       <label>메모<textarea id="editNotes" rows="3"></textarea></label>
       <div class="dialog-actions"><button type="button" id="deleteButton" class="danger">삭제</button><button type="submit" class="primary">저장</button></div>
     </form>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
   <script src="config.js"></script><script src="app.js"></script>
-</body></html>
+</body>
+</html>

@@ -10,3 +10,187 @@
 textarea[readonly]{opacity:.9;background:#f7f9fa}
 details{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 details summary{cursor:pointer;font-weight:600;color:var(--navy)}
+
+
+/* 3:3 battle page */
+.button-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:0 16px;
+  border:1px solid var(--line, #d8e0e7);
+  border-radius:12px;
+  background:#fff;
+  color:inherit;
+  font-weight:700;
+  text-decoration:none;
+  box-sizing:border-box;
+}
+.button-link:hover{transform:translateY(-1px)}
+
+.battle-main{max-width:1500px}
+.battle-toolbar{
+  display:grid;
+  grid-template-columns:auto minmax(240px, 1fr) auto auto;
+  gap:12px;
+  align-items:end;
+  margin-bottom:18px;
+}
+.battle-title-field{display:grid;gap:7px}
+.battle-title-field span,
+.battle-notes-panel label > span{font-size:.78rem;font-weight:800;color:var(--muted, #637282)}
+
+.battle-board{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);
+  gap:18px;
+  align-items:start;
+}
+.battle-side{
+  min-width:0;
+  padding:20px;
+  border:1px solid var(--line, #d8e0e7);
+  border-radius:22px;
+  background:rgba(255,255,255,.88);
+  box-shadow:var(--shadow, 0 12px 32px rgba(31,49,66,.08));
+}
+.opponent-side{background:rgba(255,249,249,.92)}
+.battle-side-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  margin-bottom:14px;
+}
+.battle-side-head h2{margin:2px 0 0;font-size:1.25rem}
+.team-count{
+  padding:7px 10px;
+  border-radius:999px;
+  background:#edf4f7;
+  color:#29495d;
+  font-size:.82rem;
+  font-weight:800;
+}
+.versus{
+  position:sticky;
+  top:28px;
+  display:grid;
+  place-items:center;
+  width:58px;
+  height:58px;
+  margin-top:72px;
+  border-radius:50%;
+  background:#17324d;
+  color:#fff;
+  font-weight:900;
+  letter-spacing:.06em;
+  box-shadow:0 12px 24px rgba(23,50,77,.2);
+}
+.battle-slots{display:grid;gap:14px}
+.battle-slot{
+  position:relative;
+  display:grid;
+  gap:12px;
+  padding:17px;
+  border:1px solid #dce4ea;
+  border-radius:17px;
+  background:#fff;
+}
+.slot-number{
+  position:absolute;
+  top:14px;
+  right:14px;
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#eff4f7;
+  color:#436071;
+  font-size:.78rem;
+  font-weight:900;
+}
+.battle-slot label{display:grid;gap:6px}
+.battle-slot label > span{
+  font-size:.75rem;
+  font-weight:800;
+  color:var(--muted, #637282);
+}
+.my-pokemon-select{padding-right:48px}
+.selected-pokemon-preview{
+  display:grid;
+  gap:10px;
+  padding:14px;
+  border-radius:14px;
+  background:#f6f9fa;
+}
+.selected-pokemon-preview.empty{
+  min-height:74px;
+  place-items:center;
+  color:#88949d;
+}
+.preview-title{display:flex;justify-content:space-between;gap:12px}
+.preview-title strong{font-size:1.07rem}
+.preview-title span{font-weight:800;color:#426173}
+.preview-species{margin-top:-8px;color:#71808a;font-size:.84rem}
+.preview-tags{display:flex;flex-wrap:wrap;gap:6px}
+.type-pill,.tera-pill{
+  display:inline-flex;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid #dde5ea;
+  font-size:.73rem;
+  font-weight:800;
+}
+.tera-pill{background:#fff4e6}
+.preview-data{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+.preview-data div{min-width:0}
+.preview-data dt{font-size:.69rem;color:#7b8993;font-weight:800}
+.preview-data dd{margin:2px 0 0;font-weight:750;overflow-wrap:anywhere}
+.preview-moves{display:flex;flex-wrap:wrap;gap:6px}
+.preview-moves span{
+  padding:6px 8px;
+  border-radius:9px;
+  background:#17324d;
+  color:white;
+  font-size:.74rem;
+  font-weight:700;
+}
+.preview-moves em{color:#8a969e;font-size:.8rem}
+.opponent-form-grid{
+  display:grid;
+  grid-template-columns:1fr 110px;
+  gap:10px;
+}
+.opponent-form-grid .wide{grid-column:1 / -1}
+.battle-notes-panel{
+  margin-top:18px;
+  padding:18px;
+  border:1px solid var(--line, #d8e0e7);
+  border-radius:18px;
+  background:#fff;
+}
+.battle-notes-panel label{display:grid;gap:8px}
+
+@media (max-width: 900px){
+  .battle-toolbar{grid-template-columns:1fr 1fr}
+  .battle-title-field{grid-column:1 / -1}
+  .battle-board{grid-template-columns:1fr}
+  .versus{
+    position:static;
+    width:48px;
+    height:48px;
+    margin:0 auto;
+  }
+}
+@media (max-width: 560px){
+  .battle-toolbar{grid-template-columns:1fr 1fr}
+  .battle-toolbar .button-link,
+  .battle-toolbar .primary{width:100%}
+  .battle-side{padding:14px;border-radius:18px}
+  .battle-slot{padding:14px}
+  .opponent-form-grid{grid-template-columns:1fr 92px}
+  .preview-data{grid-template-columns:1fr}
+}

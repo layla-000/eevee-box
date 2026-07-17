@@ -1,4 +1,5 @@
 const SHEET_NAME = 'Pokemon';
+const BATTLE_SHEET_NAME = 'Battle';
 
 function doGet(){
   return json_({ok:true,message:'Eevee Box API'});
@@ -13,6 +14,8 @@ function doPost(e){
       case 'remove': return remove_(body.id);
       case 'seed': return seed_(body.records || []);
       case 'sync_all': return syncAll_(body.records || []);
+      case 'get_battle': return getBattle_();
+      case 'save_battle': return saveBattle_(body.battle);
       default: throw new Error('Unknown action: ' + body.action);
     }
   } catch (err){
@@ -98,6 +101,39 @@ function writeAll_(records){
     return [record.id,JSON.stringify(record),record.updatedAt];
   });
   if (rows.length) sh.getRange(2,1,rows.length,3).setValues(rows);
+}
+
+
+function battleSheet_(){
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(BATTLE_SHEET_NAME);
+  if (!sh){
+    sh = ss.insertSheet(BATTLE_SHEET_NAME);
+    sh.appendRow(['id','json','updatedAt']);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function getBattle_(){
+  const sh = battleSheet_();
+  if (sh.getLastRow() < 2) return json_({ok:true,battle:null});
+  const json = sh.getRange(2,2).getValue();
+  if (!json) return json_({ok:true,battle:null});
+  try {
+    return json_({ok:true,battle:JSON.parse(json)});
+  } catch (_) {
+    return json_({ok:true,battle:null});
+  }
+}
+
+function saveBattle_(battle){
+  if (!battle) throw new Error('battle is required');
+  const sh = battleSheet_();
+  battle.id = battle.id || 'current_3v3';
+  battle.updatedAt = new Date().toISOString();
+  sh.getRange(2,1,1,3).setValues([[battle.id, JSON.stringify(battle), battle.updatedAt]]);
+  return json_({ok:true,battle});
 }
 
 function json_(obj){

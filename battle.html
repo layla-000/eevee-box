@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#17324d" />
+  <title>3:3 Battle · Eevee Box</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">SINGLE BATTLE PLANNER</p>
+      <h1>3:3 Battle</h1>
+    </div>
+    <div class="sync">
+      <span id="syncDot" class="dot"></span>
+      <span id="syncText">불러오는 중</span>
+    </div>
+  </header>
+
+  <main class="battle-main">
+    <section class="battle-toolbar">
+      <a class="button-link" href="index.html">← Eevee Box</a>
+      <label class="battle-title-field">
+        <span>배틀 이름</span>
+        <input id="battleTitle" placeholder="예: 악 타입 리그 1차전" />
+      </label>
+      <button id="saveBattle" class="primary">배틀 저장</button>
+      <button id="clearBattle">초기화</button>
+    </section>
+
+    <section class="battle-board">
+      <div class="battle-side">
+        <div class="battle-side-head">
+          <div>
+            <p class="eyebrow">MY TEAM</p>
+            <h2>내 포켓몬 3마리</h2>
+          </div>
+          <span class="team-count" id="myCount">0 / 3</span>
+        </div>
+        <div id="myTeam" class="battle-slots"></div>
+      </div>
+
+      <div class="versus" aria-hidden="true">VS</div>
+
+      <div class="battle-side opponent-side">
+        <div class="battle-side-head">
+          <div>
+            <p class="eyebrow">OPPONENT</p>
+            <h2>상대 포켓몬 3마리</h2>
+          </div>
+          <span class="team-count" id="opponentCount">0 / 3</span>
+        </div>
+        <div id="opponentTeam" class="battle-slots"></div>
+      </div>
+    </section>
+
+    <section class="battle-notes-panel">
+      <label>
+        <span>배틀 메모</span>
+        <textarea id="battleNotes" rows="5" placeholder="선봉, 교체 계획, 조심할 기술 등을 적어두세요."></textarea>
+      </label>
+    </section>
+  </main>
+
+  <template id="mySlotTemplate">
+    <article class="battle-slot">
+      <div class="slot-number"></div>
+      <label>
+        <span>포켓몬 선택</span>
+        <select class="my-pokemon-select">
+          <option value="">선택 안 함</option>
+        </select>
+      </label>
+      <div class="selected-pokemon-preview empty">포켓몬을 선택하세요.</div>
+    </article>
+  </template>
+
+  <template id="opponentSlotTemplate">
+    <article class="battle-slot">
+      <div class="slot-number"></div>
+      <div class="opponent-form-grid">
+        <label><span>이름 / 종류</span><input class="opp-name" placeholder="예: 부란다" /></label>
+        <label><span>레벨</span><input class="opp-level" type="number" min="1" max="100" placeholder="45" /></label>
+        <label><span>타입</span><input class="opp-types" placeholder="예: 격투, 악" /></label>
+        <label><span>특성</span><input class="opp-ability" placeholder="예: 철주먹" /></label>
+        <label><span>지닌 도구</span><input class="opp-item" placeholder="예: 달인의띠" /></label>
+        <label class="wide"><span>기술</span><input class="opp-moves" placeholder="불릿펀치, 드레인펀치, 도발, DD래리어트" /></label>
+      </div>
+    </article>
+  </template>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="config.js"></script>
+  <script src="battle.js"></script>
+</body>
+</html>

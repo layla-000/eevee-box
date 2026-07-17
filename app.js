@@ -18,12 +18,27 @@ function say(text){
 
 async function api(action, payload = {}){
   if (!CONFIG.apiEndpoint) throw new Error('API endpoint missing');
+
   const response = await fetch(CONFIG.apiEndpoint, {
     method: 'POST',
     headers: {'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({action, ...payload})
+    body: JSON.stringify({action, ...payload}),
+    redirect: 'follow'
   });
-  const result = await response.json();
+
+  const text = await response.text();
+
+  if (!response.ok){
+    throw new Error(`API HTTP ${response.status}: ${text.slice(0, 160)}`);
+  }
+
+  let result;
+  try {
+    result = JSON.parse(text);
+  } catch (_) {
+    throw new Error(`API가 JSON 대신 다른 응답을 반환했어요: ${text.slice(0, 160)}`);
+  }
+
   if (!result.ok) throw new Error(result.error || 'API error');
   return result;
 }
@@ -129,8 +144,20 @@ function changeLevel(id, delta){
   saveRecord(p);
 }
 
-function fillDatalist(id, values){
-  $(id).innerHTML = values.map(value => `<option value="${esc(value)}"></option>`).join('');
+function fillSelect(id, values, selectedValue, emptyLabel){
+  const select = $(id);
+  const uniqueValues = [...new Set(values.filter(Boolean))];
+
+  if (selectedValue && !uniqueValues.includes(selectedValue)){
+    uniqueValues.unshift(selectedValue);
+  }
+
+  select.innerHTML = [
+    `<option value="">${esc(emptyLabel)}</option>`,
+    ...uniqueValues.map(value =>
+      `<option value="${esc(value)}"${value === selectedValue ? ' selected' : ''}>${esc(value)}</option>`
+    )
+  ].join('');
 }
 
 function openEditor(id){
@@ -145,15 +172,13 @@ function openEditor(id){
   $('#editSpecies').value = editing.species || '';
   $('#editLevel').value = editing.level || 1;
   $('#editTypes').value = (editing.types || []).join(', ');
-  $('#editAbility').value = editing.ability || '';
-  $('#editAbilityEffect').value = editing.abilityEffect || '';
+  fillSelect('#editAbility', abilities.map(x => x.name), editing.ability || '', '특성 선택');
+  $('#editAbilityEffect').value = editing.abilityEffect || abilityDescription(editing.ability);
   $('#editTera').value = editing.teraType || '';
   $('#editNature').value = editing.nature || '';
-  $('#editItem').value = editing.heldItem || '';
+  fillSelect('#editItem', items.map(x => x.name), editing.heldItem || '', '도구 없음');
   $('#editItemEffect').value = itemDescription(editing.heldItem);
   $('#editNotes').value = editing.notes || '';
-  fillDatalist('#abilityList', abilities.map(x => x.name));
-  fillDatalist('#itemList', ['도구 없음', ...items.map(x => x.name)]);
   renderMoveInputs();
   renderMoveLibrary();
   $('#deleteButton').style.visibility = id ? 'visible' : 'hidden';
@@ -224,12 +249,11 @@ function renderMoveLibrary(){
   $('#moveLibrary').innerHTML = records.map(move => `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}<small>${esc(move.learnMethod||'')} ${move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''} · 우선도 ${esc(move.priority||0)}</small></div>`).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
 }
 
-$('#editAbility').addEventListener('input', () => {
-  $('#editAbilityEffect').value = abilityDescription($('#editAbility').value.trim());
+$('#editAbility').addEventListener('change', () => {
+  $('#editAbilityEffect').value = abilityDescription($('#editAbility').value);
 });
-$('#editItem').addEventListener('input', () => {
-  const value = $('#editItem').value.trim();
-  $('#editItemEffect').value = itemDescription(value);
+$('#editItem').addEventListener('change', () => {
+  $('#editItemEffect').value = itemDescription($('#editItem').value);
 });
 
 $('#editorForm').onsubmit = event => {

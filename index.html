@@ -32,13 +32,11 @@
         <label>종류<input id="editSpecies" required /></label>
         <label>레벨<input id="editLevel" type="number" min="1" max="100" required /></label>
         <label>타입<input id="editTypes" placeholder="예: 물, 땅" /></label>
-        <label>특성<input id="editAbility" list="abilityList" autocomplete="off" /></label>
+        <label>특성<select id="editAbility"><option value="">특성 선택</option></select></label>
         <label>테라 타입<input id="editTera" /></label>
         <label>성격<input id="editNature" /></label>
-        <label>지닌 도구<input id="editItem" list="itemList" autocomplete="off" /></label>
+        <label>지닌 도구<select id="editItem"><option value="">도구 없음</option></select></label>
       </div>
-      <datalist id="abilityList"></datalist>
-      <datalist id="itemList"></datalist>
       <label>특성 효과<textarea id="editAbilityEffect" rows="2" readonly></textarea></label>
       <label>도구 효과<textarea id="editItemEffect" rows="2" readonly></textarea></label>
       <fieldset><legend>현재 기술 4개</legend><div id="moveSelects" class="move-selects"></div></fieldset>

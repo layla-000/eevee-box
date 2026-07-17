@@ -1,0 +1,96 @@
+:root{
+  --type-normal:#9FA19F;
+  --type-flying:#81B9EF;
+  --type-ground:#915121;
+  --type-rock:#AFA981;
+  --type-ghost:#704170;
+  --type-fire:#E62829;
+  --type-water:#2980EF;
+  --type-grass:#3FA129;
+  --type-electric:#FAC000;
+  --type-psychic:#EF4179;
+  --type-ice:#3DCEF3;
+  --type-fairy:#EF70EF;
+  --type-poison:#9141CB;
+  --type-steel:#60A1B8;
+  --type-dragon:#5060E1;
+  --type-fighting:#FF8000;
+  --type-bug:#91A119;
+  --type-dark:#624D4E;
+}
+
+.type-colored{
+  --type-color:#9FA19F;
+  background:var(--type-color) !important;
+  border-color:color-mix(in srgb, var(--type-color) 82%, #000) !important;
+  color:#fff !important;
+  font-weight:800;
+  text-shadow:0 1px 1px rgba(0,0,0,.18);
+}
+
+.type-colored[data-type="전기"],
+.type-colored[data-type="바위"]{
+  color:#fff !important;
+}
+
+.badge.type-colored,
+.type-pill.type-colored,
+.tera-pill.type-colored,
+.move-meta span.type-colored,
+.move-reference-head span.type-colored{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:24px;
+  padding:4px 9px;
+  border:0 !important;
+  border-radius:999px;
+}
+
+.move-type-card{
+  --type-color:#9FA19F;
+  position:relative;
+  overflow:hidden;
+  background:color-mix(in srgb, var(--type-color) 14%, #fff) !important;
+  border-color:color-mix(in srgb, var(--type-color) 48%, #dbe2e7) !important;
+}
+
+.move-type-card::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:5px;
+  background:var(--type-color);
+}
+
+.move-type-name{
+  --type-color:#9FA19F;
+  display:flex !important;
+  align-items:center;
+  min-height:32px;
+  padding:7px 10px !important;
+  border:0 !important;
+  border-radius:9px !important;
+  background:var(--type-color) !important;
+  color:#fff !important;
+  font-weight:800;
+  text-shadow:0 1px 1px rgba(0,0,0,.18);
+}
+
+.move-type-name[data-type="전기"],
+.move-type-name[data-type="바위"]{
+  color:#fff !important;
+}
+
+select.type-aware-select{
+  border-left:6px solid var(--selected-type-color, var(--line)) !important;
+}
+
+@media (max-width:700px){
+  .badge.type-colored,
+  .type-pill.type-colored,
+  .tera-pill.type-colored{
+    min-height:23px;
+    padding:4px 8px;
+  }
+}

@@ -11,6 +11,7 @@ let battle = emptyBattle();
 
 const $ = selector => document.querySelector(selector);
 const toast = $('#toast');
+const HOUSE_STAT_BONUS = 14;
 const STAT_DEFS = [
   ['hp','HP'], ['attack','공격'], ['defense','방어'],
   ['spAttack','특공'], ['spDefense','특방'], ['speed','스피드']
@@ -33,7 +34,7 @@ function battleStatsPanel(record){
       const level = Math.max(1, Math.min(100, Math.floor(Number(record.level) || 1)));
       const evPart = Math.floor(ev / 4);
       const scaled = Math.floor(((base * 2) + evPart) * level / 100);
-      const current = key === 'hp' ? scaled + level + 10 : scaled + 5;
+      const current = (key === 'hp' ? scaled + level + 10 : scaled + 5) + HOUSE_STAT_BONUS;
       const width = Math.min(100, current / 300 * 100);
       return `<div class="stat-display-row"><span class="stat-label">${label}</span><span class="stat-equation"><b>${base}</b><i>+${ev} EV</i><em>→</em><strong>${current}</strong></span><span class="stat-bar"><span style="width:${width}%"></span></span></div>`;
     }).join('')}

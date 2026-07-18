@@ -7,6 +7,8 @@ let items = [];
 let moveDex = [];
 let moveMap = new Map();
 let baseStatsByName = {};
+let pokemonCatalog = [];
+let pokemonCatalogByName = new Map();
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 const toast = $('#toast');
@@ -16,6 +18,7 @@ const STAT_DEFS = [
 ];
 const MAX_EV_PER_STAT = 252;
 const MAX_TOTAL_EV = 510;
+const HOUSE_STAT_BONUS = 14;
 
 function clampNumber(value, min, max){
   const number = Number(value);
@@ -39,7 +42,7 @@ function statValues(record, key){
   const level = clampNumber(record?.level ?? 1, 1, 100);
   const evPart = Math.floor(stat.ev / 4);
   const scaled = Math.floor(((stat.base * 2) + evPart) * level / 100);
-  const current = key === 'hp' ? scaled + level + 10 : scaled + 5;
+  const current = (key === 'hp' ? scaled + level + 10 : scaled + 5) + HOUSE_STAT_BONUS;
   return {...stat, level, evPart, current};
 }
 
@@ -102,19 +105,23 @@ function mergeRecords(localRecords, remoteRecords){
 }
 
 async function load(){
-  const [seed, abilityData, itemData, allMoves, baseStatData] = await Promise.all([
+  const [seed, abilityData, itemData, allMoves, baseStatData, catalogData] = await Promise.all([
     fetch('pokemon-data.json').then(r => r.json()),
     fetch('abilities.json').then(r => r.json()),
     fetch('items.json').then(r => r.json()),
     fetch('moves.json').then(r => r.json()),
-    fetch('pokemon-base-stats-by-name.json').then(r => r.json())
+    fetch('pokemon-base-stats-by-name.json').then(r => r.json()),
+    fetch('pokemon-catalog.json').then(r => r.json())
   ]);
   abilities = abilityData;
   items = itemData;
   moveDex = allMoves;
   moveMap = new Map(moveDex.map(move => [move.name, move]));
   baseStatsByName = baseStatData || {};
-  $('#speciesList').innerHTML = Object.keys(baseStatsByName).map(name => `<option value="${esc(name)}"></option>`).join('');
+  pokemonCatalog = Array.isArray(catalogData) ? catalogData : [];
+  pokemonCatalogByName = new Map(pokemonCatalog.map(record => [record.name, record]));
+  const speciesNames = [...new Set([...Object.keys(baseStatsByName), ...pokemonCatalog.map(record => record.name)])].sort((a, b) => a.localeCompare(b, 'ko'));
+  $('#speciesList').innerHTML = speciesNames.map(name => `<option value="${esc(name)}"></option>`).join('');
 
   const local = JSON.parse(localStorage.getItem(KEY) || 'null');
   data = local || seed;
@@ -231,7 +238,7 @@ function openEditor(id){
   $('#editSpecies').value = editing.species || '';
   $('#editLevel').value = editing.level || 1;
   $('#editTypes').value = (editing.types || []).join(', ');
-  fillSelect('#editAbility', abilities.map(x => x.name), editing.ability || '', '특성 선택');
+  fillSpeciesAbilitySelect(editing.species, editing.ability || '');
   $('#editAbilityEffect').value = editing.abilityEffect || abilityDescription(editing.ability);
   $('#editTera').value = editing.teraType || '';
   $('#editNature').value = editing.nature || '';
@@ -364,20 +371,48 @@ function renderMoveLibrary(){
   $('#moveLibrary').innerHTML = records.map(move => `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}<small>${esc(move.learnMethod||'')} ${move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''} · 우선도 ${esc(move.priority||0)}</small></div>`).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
 }
 
-function applySpeciesBaseStats(){
-  const species = $('#editSpecies').value.trim();
-  const found = baseStatsByName[species];
-  if (!found?.stats) return;
-  const current = readStatsEditor();
-  STAT_DEFS.forEach(([key]) => {
-    current[key].base = clampNumber(found.stats[key], 0, 999);
-  });
-  editing.stats = current;
-  renderStatsEditor();
-  say(`${species}의 기본 능력치를 불러왔어요`);
+function fillSpeciesAbilitySelect(species, selectedValue = ''){
+  const catalogRecord = pokemonCatalogByName.get(species);
+  const availableAbilities = catalogRecord?.abilities || [];
+  fillSelect(
+    '#editAbility',
+    availableAbilities.length ? availableAbilities : abilities.map(record => record.name),
+    selectedValue,
+    '특성 선택'
+  );
 }
 
-$('#editSpecies').addEventListener('change', applySpeciesBaseStats);
+function applySpeciesData({notify = true} = {}){
+  const species = $('#editSpecies').value.trim();
+  const baseRecord = baseStatsByName[species];
+  const catalogRecord = pokemonCatalogByName.get(species);
+  if (!baseRecord && !catalogRecord) return false;
+
+  if (baseRecord?.stats){
+    const current = readStatsEditor();
+    STAT_DEFS.forEach(([key]) => {
+      current[key].base = clampNumber(baseRecord.stats[key], 0, 999);
+    });
+    editing.stats = current;
+    renderStatsEditor();
+  }
+
+  if (catalogRecord){
+    $('#editTypes').value = (catalogRecord.types || []).join(', ');
+    const currentAbility = $('#editAbility').value.trim();
+    const nextAbility = (catalogRecord.abilities || []).includes(currentAbility) ? currentAbility : '';
+    fillSpeciesAbilitySelect(species, nextAbility);
+    $('#editAbilityEffect').value = abilityDescription(nextAbility);
+  } else {
+    fillSpeciesAbilitySelect(species, $('#editAbility').value.trim());
+  }
+
+  if (notify) say(`${species}의 타입, 특성, 기본 능력치를 반영했어요`);
+  return true;
+}
+
+$('#editSpecies').addEventListener('input', () => applySpeciesData({notify:false}));
+$('#editSpecies').addEventListener('change', () => applySpeciesData({notify:true}));
 $('#editLevel').addEventListener('input', updateStatsEditor);
 $('#editLevel').addEventListener('change', updateStatsEditor);
 

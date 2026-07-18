@@ -9,6 +9,40 @@ let moveMap = new Map();
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 const toast = $('#toast');
+const STAT_DEFS = [
+  ['hp','HP'], ['attack','공격'], ['defense','방어'],
+  ['spAttack','특공'], ['spDefense','특방'], ['speed','스피드']
+];
+const MAX_EV_PER_STAT = 252;
+const MAX_TOTAL_EV = 510;
+
+function clampNumber(value, min, max){
+  const number = Number(value);
+  if (!Number.isFinite(number)) return min;
+  return Math.max(min, Math.min(max, Math.floor(number)));
+}
+
+function normalizeStats(record){
+  const source = record?.stats || {};
+  return Object.fromEntries(STAT_DEFS.map(([key]) => {
+    const value = source[key] || {};
+    return [key, {
+      base: clampNumber(value.base ?? 0, 0, 999),
+      ev: clampNumber(value.ev ?? 0, 0, MAX_EV_PER_STAT)
+    }];
+  }));
+}
+
+function statValues(record, key){
+  const stat = normalizeStats(record)[key];
+  const gain = Math.floor(stat.ev / 4);
+  return {...stat, gain, current: stat.base + gain};
+}
+
+function totalEv(record){
+  const stats = normalizeStats(record);
+  return STAT_DEFS.reduce((sum, [key]) => sum + stats[key].ev, 0);
+}
 
 function say(text){
   toast.textContent = text;
@@ -132,9 +166,28 @@ function card(p){
     <div class="card-head"><div><h3>${esc(p.nickname||p.species)}</h3><div class="species">${esc(p.species)}</div></div><button data-edit="${p.id}">수정</button></div>
     <div class="badges">${(p.types||[]).map(x=>`<span class="badge">${esc(x)}</span>`).join('')}${p.teraType?`<span class="badge">테라 ${esc(p.teraType)}</span>`:''}</div>
     <div class="level-row"><span>현재 레벨</span><strong>Lv.${p.level||1}</strong><div class="level-controls"><button data-level="${p.id}" data-delta="-1">−</button><button data-level="${p.id}" data-delta="1">+</button></div></div>
+    ${statsPanel(p)}
     <ul class="moves">${[0,1,2,3].map(i=>`<li>${esc((p.currentMoves||[])[i]||'—')}</li>`).join('')}</ul>
     <div class="card-foot"><span>${esc(p.ability||'특성 미입력')}</span><span>${p.heldItem?esc(p.heldItem):'도구 없음'}</span></div>
   </article>`;
+}
+
+function statsPanel(record){
+  const used = totalEv(record);
+  const rows = STAT_DEFS.map(([key, label]) => {
+    const value = statValues(record, key);
+    const width = Math.min(100, Math.max(0, value.current / 300 * 100));
+    return `<div class="stat-display-row">
+      <span class="stat-label">${label}</span>
+      <span class="stat-equation"><b>${value.base}</b><i>+${value.gain}</i><em>=</em><strong>${value.current}</strong></span>
+      <span class="stat-ev">EV ${value.ev}</span>
+      <span class="stat-bar"><span style="width:${width}%"></span></span>
+    </div>`;
+  }).join('');
+  return `<section class="stats-panel">
+    <div class="stats-panel-title"><span>능력치</span><small>${used} / ${MAX_TOTAL_EV} EV</small></div>
+    ${rows}
+  </section>`;
 }
 
 function changeLevel(id, delta){
@@ -164,7 +217,7 @@ function openEditor(id){
   editing = id ? data.find(x => x.id === id) : {
     id:'p'+Date.now(), order:data.length+1, nickname:'', species:'', level:1,
     types:[], ability:'', abilityEffect:'', teraType:'', nature:'', heldItem:'',
-    notes:'', currentMoves:[], moves:[]
+    notes:'', currentMoves:[], moves:[], stats: normalizeStats({})
   };
   $('#editorTitle').textContent = id ? '포켓몬 수정' : '포켓몬 추가';
   $('#editId').value = editing.id;
@@ -179,10 +232,66 @@ function openEditor(id){
   fillSelect('#editItem', items.map(x => x.name), editing.heldItem || '', '도구 없음');
   $('#editItemEffect').value = itemDescription(editing.heldItem);
   $('#editNotes').value = editing.notes || '';
+  editing.stats = normalizeStats(editing);
+  renderStatsEditor();
   renderMoveInputs();
   renderMoveLibrary();
   $('#deleteButton').style.visibility = id ? 'visible' : 'hidden';
   $('#editor').showModal();
+}
+
+function renderStatsEditor(){
+  const stats = normalizeStats(editing);
+  $('#statsEditor').innerHTML = STAT_DEFS.map(([key, label]) => {
+    const value = statValues({stats}, key);
+    return `<div class="stat-editor-row" data-stat="${key}">
+      <strong>${label}</strong>
+      <input class="stat-base-input" type="number" min="0" max="999" value="${value.base}" inputmode="numeric" aria-label="${label} 기본 능력치">
+      <input class="stat-ev-input" type="number" min="0" max="252" step="1" value="${value.ev}" inputmode="numeric" aria-label="${label} 노력치">
+      <span class="stat-gain-value">+${value.gain}</span>
+      <span class="stat-current-value">${value.current}</span>
+    </div>`;
+  }).join('');
+
+  $('#statsEditor').querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', updateStatsEditor);
+    input.addEventListener('change', updateStatsEditor);
+  });
+  updateStatsEditor();
+}
+
+function readStatsEditor(){
+  const stats = {};
+  $('#statsEditor').querySelectorAll('.stat-editor-row').forEach(row => {
+    stats[row.dataset.stat] = {
+      base: clampNumber(row.querySelector('.stat-base-input').value, 0, 999),
+      ev: clampNumber(row.querySelector('.stat-ev-input').value, 0, MAX_EV_PER_STAT)
+    };
+  });
+  return stats;
+}
+
+function updateStatsEditor(){
+  const stats = readStatsEditor();
+  let used = 0;
+  $('#statsEditor').querySelectorAll('.stat-editor-row').forEach(row => {
+    const value = statValues({stats}, row.dataset.stat);
+    const evInput = row.querySelector('.stat-ev-input');
+    const baseInput = row.querySelector('.stat-base-input');
+    if (Number(evInput.value) !== value.ev) evInput.value = value.ev;
+    if (Number(baseInput.value) !== value.base) baseInput.value = value.base;
+    row.querySelector('.stat-gain-value').textContent = `+${value.gain}`;
+    row.querySelector('.stat-current-value').textContent = value.current;
+    used += value.ev;
+  });
+
+  const remaining = MAX_TOTAL_EV - used;
+  $('#evUsed').textContent = `${used} / ${MAX_TOTAL_EV}`;
+  $('#evRemaining').textContent = remaining >= 0 ? `남음 ${remaining}` : `초과 ${Math.abs(remaining)}`;
+  const warning = $('#evWarning');
+  warning.hidden = used <= MAX_TOTAL_EV;
+  warning.textContent = used > MAX_TOTAL_EV ? `총 노력치가 ${used - MAX_TOTAL_EV}만큼 초과됐어요.` : '';
+  $('#evUsed').classList.toggle('over', used > MAX_TOTAL_EV);
 }
 
 function abilityDescription(name){
@@ -259,6 +368,12 @@ $('#editItem').addEventListener('change', () => {
 $('#editorForm').onsubmit = event => {
   event.preventDefault();
   const held = $('#editItem').value.trim();
+  const stats = readStatsEditor();
+  const usedEv = STAT_DEFS.reduce((sum, [key]) => sum + stats[key].ev, 0);
+  if (usedEv > MAX_TOTAL_EV){
+    say(`노력치는 총 ${MAX_TOTAL_EV}까지만 투자할 수 있어요`);
+    return;
+  }
   Object.assign(editing, {
     nickname: $('#editNickname').value.trim(),
     species: $('#editSpecies').value.trim(),
@@ -270,6 +385,7 @@ $('#editorForm').onsubmit = event => {
     nature: $('#editNature').value.trim(),
     heldItem: held === '도구 없음' ? '' : held,
     notes: $('#editNotes').value.trim(),
+    stats,
     currentMoves: [...document.querySelectorAll('.move-select')].map(x=>x.value).filter(Boolean)
   });
   if (!data.some(x => x.id === editing.id)) data.push(editing);

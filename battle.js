@@ -11,6 +11,31 @@ let battle = emptyBattle();
 
 const $ = selector => document.querySelector(selector);
 const toast = $('#toast');
+const STAT_DEFS = [
+  ['hp','HP'], ['attack','공격'], ['defense','방어'],
+  ['spAttack','특공'], ['spDefense','특방'], ['speed','스피드']
+];
+function normalizedStats(record){
+  const source = record?.stats || {};
+  return Object.fromEntries(STAT_DEFS.map(([key]) => [key, {
+    base: Math.max(0, Number(source[key]?.base) || 0),
+    ev: Math.max(0, Math.min(252, Number(source[key]?.ev) || 0))
+  }]));
+}
+function battleStatsPanel(record){
+  const stats = normalizedStats(record);
+  const used = STAT_DEFS.reduce((sum,[key]) => sum + stats[key].ev, 0);
+  return `<section class="stats-panel battle-stats-panel">
+    <div class="stats-panel-title"><span>능력치</span><small>${used} / 510 EV</small></div>
+    ${STAT_DEFS.map(([key,label]) => {
+      const base = stats[key].base;
+      const gain = Math.floor(stats[key].ev / 4);
+      const current = base + gain;
+      const width = Math.min(100, current / 300 * 100);
+      return `<div class="stat-display-row"><span class="stat-label">${label}</span><span class="stat-equation"><b>${base}</b><i>+${gain}</i><em>=</em><strong>${current}</strong></span><span class="stat-ev">EV ${stats[key].ev}</span><span class="stat-bar"><span style="width:${width}%"></span></span></div>`;
+    }).join('')}
+  </section>`;
+}
 
 function emptyBattle(){
   return {
@@ -214,6 +239,8 @@ function updateMyPreview(slot, id){
       ${(record.types || []).map(type => `<span class="type-pill">${escapeHtml(type)}</span>`).join('')}
       ${record.teraType ? `<span class="tera-pill">테라 ${escapeHtml(record.teraType)}</span>` : ''}
     </div>
+
+    ${battleStatsPanel(record)}
 
     <div class="my-reference-block">
       <div class="my-reference-title">특성 · ${escapeHtml(record.ability || '없음')}</div>

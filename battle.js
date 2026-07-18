@@ -8,7 +8,7 @@ let abilities = [];
 let items = [];
 let moves = [];
 let baseStatsByName = {};
-let battle = emptyBattle();
+let battle;
 
 const $ = selector => document.querySelector(selector);
 const toast = $('#toast');
@@ -65,6 +65,8 @@ function emptyOpponent(){
     moves:['', '', '', '']
   };
 }
+
+battle = emptyBattle();
 
 function say(message){
   toast.textContent = message;

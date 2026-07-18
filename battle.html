@@ -32,6 +32,21 @@
       <button id="clearBattle">초기화</button>
     </section>
 
+    <section class="battle-saves-panel" aria-labelledby="battleSavesTitle">
+      <div class="battle-saves-head">
+        <div>
+          <p class="eyebrow">CLOUD SAVES</p>
+          <h2 id="battleSavesTitle">저장된 배틀 구성</h2>
+        </div>
+        <div class="battle-saves-tools">
+          <span id="battleSaveCount" class="team-count">0개</span>
+          <button id="refreshBattleSaves" type="button">새로고침</button>
+        </div>
+      </div>
+      <p id="battleSaveEmpty" class="battle-save-empty">아직 저장된 배틀 구성이 없어요.</p>
+      <div id="battleSaveList" class="battle-save-list"></div>
+    </section>
+
     <section class="battle-board">
       <div class="battle-side">
         <div class="battle-side-head">

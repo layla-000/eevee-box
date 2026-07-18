@@ -1,6 +1,7 @@
 const CONFIG = window.EEVEE_BOX_CONFIG || {};
 const POKEMON_KEY = 'EEVEE_BOX_DATA_V1';
 const BATTLE_KEY = 'EEVEE_BOX_BATTLE_V1';
+const BATTLE_SAVES_KEY = 'EEVEE_BOX_BATTLE_SAVES_V2';
 
 let pokemon = [];
 let pokemonCatalog = [];
@@ -9,6 +10,8 @@ let items = [];
 let moves = [];
 let baseStatsByName = {};
 let battle;
+let battleSaves = [];
+let activeBattleId = '';
 
 const $ = selector => document.querySelector(selector);
 const toast = $('#toast');
@@ -44,7 +47,7 @@ function battleStatsPanel(record){
 
 function emptyBattle(){
   return {
-    id: 'current_3v3',
+    id: '',
     title: '',
     myTeam: ['', '', ''],
     opponentTeam: [emptyOpponent(), emptyOpponent(), emptyOpponent()],
@@ -141,22 +144,37 @@ async function load(){
   }
 
   const localBattle = JSON.parse(localStorage.getItem(BATTLE_KEY) || 'null');
-  if (localBattle) battle = normalizeBattle(localBattle);
+  const localSaves = JSON.parse(localStorage.getItem(BATTLE_SAVES_KEY) || '[]');
+  if (localBattle) {
+    battle = normalizeBattle(localBattle);
+    activeBattleId = battle.id || '';
+  }
+  if (Array.isArray(localSaves)) battleSaves = localSaves.map(normalizeBattle);
 
   if (CONFIG.apiEndpoint){
     try {
       const [pokemonResult, battleResult] = await Promise.all([
         api('get_all'),
-        api('get_battle')
+        api('list_battles')
       ]);
       if (pokemonResult.records?.length) pokemon = pokemonResult.records;
-      if (battleResult.battle) battle = normalizeBattle(battleResult.battle);
+      battleSaves = Array.isArray(battleResult.battles)
+        ? battleResult.battles.map(normalizeBattle)
+        : [];
+
+      // 이 기기에 작업 중인 초안이 없으면 가장 최근의 클라우드 저장본을 열어요.
+      if (!localBattle && battleSaves.length){
+        battle = normalizeBattle(battleSaves[0]);
+        activeBattleId = battle.id || '';
+      }
+
       localStorage.setItem(POKEMON_KEY, JSON.stringify(pokemon));
       localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-      setSync(true);
+      localStorage.setItem(BATTLE_SAVES_KEY, JSON.stringify(battleSaves));
+      setSync(true, '클라우드 동기화');
     } catch (error){
       console.warn(error);
-      setSync(false);
+      setSync(false, '오프라인 · 로컬 캐시');
     }
   } else {
     setSync(false);
@@ -194,6 +212,7 @@ function render(){
 
   renderMyTeam();
   renderOpponentTeam();
+  renderBattleSaves();
   updateCounts();
 }
 
@@ -607,35 +626,193 @@ function persistLocal(){
   localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
 }
 
+function makeBattleId(){
+  if (globalThis.crypto?.randomUUID) return `battle_${crypto.randomUUID()}`;
+  return `battle_${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
+}
+
+function cacheBattleSaves(){
+  localStorage.setItem(BATTLE_SAVES_KEY, JSON.stringify(battleSaves));
+}
+
+function sortBattleSaves(){
+  battleSaves.sort((a,b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
+}
+
+function renderBattleSaves(){
+  const list = $('#battleSaveList');
+  const empty = $('#battleSaveEmpty');
+  const count = $('#battleSaveCount');
+  if (!list || !empty || !count) return;
+
+  sortBattleSaves();
+  count.textContent = `${battleSaves.length}개`;
+  empty.hidden = battleSaves.length > 0;
+  list.innerHTML = battleSaves.map(saved => `
+    <article class="battle-save-card${saved.id === activeBattleId ? ' active' : ''}" data-id="${escapeHtml(saved.id)}">
+      <button class="battle-save-open" type="button">
+        <strong>${escapeHtml(saved.title || '이름 없는 배틀')}</strong>
+        <small>${formatSavedAt(saved.updatedAt)}</small>
+      </button>
+      <div class="battle-save-actions">
+        <button class="battle-save-rename" type="button">이름 변경</button>
+        <button class="battle-save-delete danger" type="button">삭제</button>
+      </div>
+    </article>
+  `).join('');
+
+  list.querySelectorAll('.battle-save-card').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector('.battle-save-open').addEventListener('click', () => loadSavedBattle(id));
+    card.querySelector('.battle-save-rename').addEventListener('click', () => renameSavedBattle(id));
+    card.querySelector('.battle-save-delete').addEventListener('click', () => deleteSavedBattle(id));
+  });
+}
+
+function formatSavedAt(value){
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime())) return '저장 시각 없음';
+  return new Intl.DateTimeFormat('ko-KR', {
+    year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'
+  }).format(date);
+}
+
+function loadSavedBattle(id){
+  const saved = battleSaves.find(item => item.id === id);
+  if (!saved) return;
+  battle = normalizeBattle(JSON.parse(JSON.stringify(saved)));
+  activeBattleId = battle.id;
+  localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
+  render();
+  window.scrollTo({top:0, behavior:'smooth'});
+  say(`“${battle.title || '이름 없는 배틀'}”을 불러왔어요`);
+}
+
+async function refreshBattleSaves({silent = false} = {}){
+  if (!CONFIG.apiEndpoint) return;
+  try {
+    const result = await api('list_battles');
+    battleSaves = Array.isArray(result.battles) ? result.battles.map(normalizeBattle) : [];
+    cacheBattleSaves();
+    renderBattleSaves();
+    setSync(true, '클라우드 동기화');
+    if (!silent) say('다른 기기의 저장 목록까지 새로 불러왔어요');
+  } catch (error){
+    console.warn(error);
+    setSync(false, '오프라인 · 로컬 캐시');
+    if (!silent) say('클라우드 목록을 불러오지 못했어요');
+  }
+}
+
 async function saveBattle(){
   readPageValues();
+  if (!battle.title){
+    $('#battleTitle').focus();
+    say('배틀 이름을 먼저 입력해 주세요');
+    return;
+  }
+
+  if (!activeBattleId){
+    const sameTitle = battleSaves.find(item => item.title.trim() === battle.title.trim());
+    if (sameTitle){
+      if (!confirm(`“${battle.title}” 저장본이 이미 있어요. 덮어쓸까요?`)) return;
+      activeBattleId = sameTitle.id;
+    } else {
+      activeBattleId = makeBattleId();
+    }
+  }
+
+  battle.id = activeBattleId;
+  battle.updatedAt = new Date().toISOString();
   localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
 
   if (!CONFIG.apiEndpoint){
+    const index = battleSaves.findIndex(item => item.id === battle.id);
+    if (index >= 0) battleSaves[index] = normalizeBattle(battle);
+    else battleSaves.unshift(normalizeBattle(battle));
+    cacheBattleSaves();
+    renderBattleSaves();
     setSync(false);
-    say('로컬에 저장했어요');
+    say('이 기기에만 저장했어요');
     return;
   }
 
   try {
     const result = await api('save_battle', {battle});
-    if (result.battle) battle = normalizeBattle(result.battle);
+    battle = normalizeBattle(result.battle || battle);
+    activeBattleId = battle.id;
+    const index = battleSaves.findIndex(item => item.id === battle.id);
+    if (index >= 0) battleSaves[index] = normalizeBattle(battle);
+    else battleSaves.unshift(normalizeBattle(battle));
+    cacheBattleSaves();
     localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-    setSync(true);
-    say('배틀 구성을 저장했어요');
+    renderBattleSaves();
+    setSync(true, '클라우드 동기화');
+    say('모든 기기에서 볼 수 있게 저장했어요');
   } catch (error){
     console.warn(error);
-    setSync(false);
-    say('웹 저장 실패 · 로컬에는 저장됐어요');
+    setSync(false, '저장 실패 · 로컬 초안 유지');
+    say('클라우드 저장에 실패했어요');
+  }
+}
+
+async function renameSavedBattle(id){
+  const saved = battleSaves.find(item => item.id === id);
+  if (!saved) return;
+  const nextTitle = prompt('새 배틀 이름을 입력해 주세요.', saved.title || '');
+  if (nextTitle === null) return;
+  const title = nextTitle.trim();
+  if (!title) return say('이름은 비워둘 수 없어요');
+
+  try {
+    const result = CONFIG.apiEndpoint
+      ? await api('rename_battle', {id, title})
+      : {battle:{...saved, title, updatedAt:new Date().toISOString()}};
+    const renamed = normalizeBattle(result.battle);
+    const index = battleSaves.findIndex(item => item.id === id);
+    if (index >= 0) battleSaves[index] = renamed;
+    if (activeBattleId === id){
+      battle.title = title;
+      battle.updatedAt = renamed.updatedAt;
+      localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
+      $('#battleTitle').value = title;
+    }
+    cacheBattleSaves();
+    renderBattleSaves();
+    say('이름을 변경했어요');
+  } catch (error){
+    console.warn(error);
+    say('이름 변경에 실패했어요');
+  }
+}
+
+async function deleteSavedBattle(id){
+  const saved = battleSaves.find(item => item.id === id);
+  if (!saved || !confirm(`“${saved.title || '이름 없는 배틀'}” 저장본을 삭제할까요?`)) return;
+  try {
+    if (CONFIG.apiEndpoint) await api('delete_battle', {id});
+    battleSaves = battleSaves.filter(item => item.id !== id);
+    if (activeBattleId === id){
+      activeBattleId = '';
+      battle.id = '';
+      localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
+    }
+    cacheBattleSaves();
+    renderBattleSaves();
+    say('저장본을 삭제했어요');
+  } catch (error){
+    console.warn(error);
+    say('삭제에 실패했어요');
   }
 }
 
 function clearBattle(){
-  if (!confirm('현재 3:3 배틀 구성을 모두 비울까요?')) return;
+  if (!confirm('현재 편집 중인 3:3 배틀 구성을 모두 비울까요? 저장 목록은 삭제되지 않아요.')) return;
   battle = emptyBattle();
+  activeBattleId = '';
   localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
   render();
-  say('배틀 구성을 비웠어요');
+  say('새 배틀을 시작했어요');
 }
 
 function updateCounts(){
@@ -653,8 +830,15 @@ function escapeHtml(value){
 
 $('#saveBattle').addEventListener('click', saveBattle);
 $('#clearBattle').addEventListener('click', clearBattle);
+$('#refreshBattleSaves')?.addEventListener('click', () => refreshBattleSaves());
 $('#battleTitle').addEventListener('input', persistLocal);
 $('#battleNotes').addEventListener('input', persistLocal);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshBattleSaves({silent:true});
+});
+window.addEventListener('focus', () => refreshBattleSaves({silent:true}));
+setInterval(() => { if (!document.hidden) refreshBattleSaves({silent:true}); }, 30000);
 
 load().catch(error => {
   console.error(error);

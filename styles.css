@@ -374,3 +374,53 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 @media(max-width:560px){
   .opponent-stat-columns,.opponent-stat-row{grid-template-columns:52px 48px minmax(62px,1fr) 50px;gap:5px}
 }
+
+/* Cloud battle saves */
+.battle-saves-panel{
+  margin:18px 0;
+  padding:18px;
+  border:1px solid var(--line, #d8e0e7);
+  border-radius:18px;
+  background:#fff;
+}
+.battle-saves-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:12px;
+}
+.battle-saves-head h2{margin:0;font-size:1.05rem;color:#17324d}
+.battle-saves-tools{display:flex;align-items:center;gap:8px}
+.battle-save-empty{margin:0;color:#7b8992;font-size:.82rem}
+.battle-save-list{display:grid;gap:9px}
+.battle-save-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  border:1px solid #e0e7eb;
+  border-radius:13px;
+  background:#f8fafb;
+}
+.battle-save-card.active{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.12)}
+.battle-save-open{
+  display:grid;
+  gap:4px;
+  min-width:0;
+  padding:4px 6px;
+  border:0;
+  background:transparent;
+  text-align:left;
+}
+.battle-save-open strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#17324d}
+.battle-save-open small{color:#7b8992;font-size:.7rem}
+.battle-save-actions{display:flex;gap:6px}
+.battle-save-actions button{padding:8px 10px;font-size:.72rem}
+.battle-save-actions .danger{color:#b3261e}
+@media(max-width:560px){
+  .battle-saves-head{align-items:flex-start}
+  .battle-save-card{grid-template-columns:1fr}
+  .battle-save-actions{justify-content:flex-end}
+}

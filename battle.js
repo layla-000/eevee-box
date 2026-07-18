@@ -29,10 +29,13 @@ function battleStatsPanel(record){
     <div class="stats-panel-title"><span>능력치</span><small>${used} / 510 EV</small></div>
     ${STAT_DEFS.map(([key,label]) => {
       const base = stats[key].base;
-      const gain = Math.floor(stats[key].ev / 4);
-      const current = base + gain;
+      const ev = stats[key].ev;
+      const level = Math.max(1, Math.min(100, Math.floor(Number(record.level) || 1)));
+      const evPart = Math.floor(ev / 4);
+      const scaled = Math.floor(((base * 2) + evPart) * level / 100);
+      const current = key === 'hp' ? scaled + level + 10 : scaled + 5;
       const width = Math.min(100, current / 300 * 100);
-      return `<div class="stat-display-row"><span class="stat-label">${label}</span><span class="stat-equation"><b>${base}</b><i>+${gain}</i><em>=</em><strong>${current}</strong></span><span class="stat-ev">EV ${stats[key].ev}</span><span class="stat-bar"><span style="width:${width}%"></span></span></div>`;
+      return `<div class="stat-display-row"><span class="stat-label">${label}</span><span class="stat-equation"><b>${base}</b><i>+${ev} EV</i><em>→</em><strong>${current}</strong></span><span class="stat-bar"><span style="width:${width}%"></span></span></div>`;
     }).join('')}
   </section>`;
 }

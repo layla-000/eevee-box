@@ -6,6 +6,7 @@ let abilities = [];
 let items = [];
 let moveDex = [];
 let moveMap = new Map();
+let baseStatsByName = {};
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 const toast = $('#toast');
@@ -35,8 +36,11 @@ function normalizeStats(record){
 
 function statValues(record, key){
   const stat = normalizeStats(record)[key];
-  const gain = Math.floor(stat.ev / 4);
-  return {...stat, gain, current: stat.base + gain};
+  const level = clampNumber(record?.level ?? 1, 1, 100);
+  const evPart = Math.floor(stat.ev / 4);
+  const scaled = Math.floor(((stat.base * 2) + evPart) * level / 100);
+  const current = key === 'hp' ? scaled + level + 10 : scaled + 5;
+  return {...stat, level, evPart, current};
 }
 
 function totalEv(record){
@@ -98,16 +102,19 @@ function mergeRecords(localRecords, remoteRecords){
 }
 
 async function load(){
-  const [seed, abilityData, itemData, allMoves] = await Promise.all([
+  const [seed, abilityData, itemData, allMoves, baseStatData] = await Promise.all([
     fetch('pokemon-data.json').then(r => r.json()),
     fetch('abilities.json').then(r => r.json()),
     fetch('items.json').then(r => r.json()),
-    fetch('moves.json').then(r => r.json())
+    fetch('moves.json').then(r => r.json()),
+    fetch('pokemon-base-stats-by-name.json').then(r => r.json())
   ]);
   abilities = abilityData;
   items = itemData;
   moveDex = allMoves;
   moveMap = new Map(moveDex.map(move => [move.name, move]));
+  baseStatsByName = baseStatData || {};
+  $('#speciesList').innerHTML = Object.keys(baseStatsByName).map(name => `<option value="${esc(name)}"></option>`).join('');
 
   const local = JSON.parse(localStorage.getItem(KEY) || 'null');
   data = local || seed;
@@ -179,8 +186,7 @@ function statsPanel(record){
     const width = Math.min(100, Math.max(0, value.current / 300 * 100));
     return `<div class="stat-display-row">
       <span class="stat-label">${label}</span>
-      <span class="stat-equation"><b>${value.base}</b><i>+${value.gain}</i><em>=</em><strong>${value.current}</strong></span>
-      <span class="stat-ev">EV ${value.ev}</span>
+      <span class="stat-equation"><b>${value.base}</b><i>+${value.ev} EV</i><em>→</em><strong>${value.current}</strong></span>
       <span class="stat-bar"><span style="width:${width}%"></span></span>
     </div>`;
   }).join('');
@@ -242,13 +248,13 @@ function openEditor(id){
 
 function renderStatsEditor(){
   const stats = normalizeStats(editing);
+  const level = clampNumber($('#editLevel').value || editing?.level || 1, 1, 100);
   $('#statsEditor').innerHTML = STAT_DEFS.map(([key, label]) => {
-    const value = statValues({stats}, key);
+    const value = statValues({stats, level}, key);
     return `<div class="stat-editor-row" data-stat="${key}">
       <strong>${label}</strong>
       <input class="stat-base-input" type="number" min="0" max="999" value="${value.base}" inputmode="numeric" aria-label="${label} 기본 능력치">
       <input class="stat-ev-input" type="number" min="0" max="252" step="1" value="${value.ev}" inputmode="numeric" aria-label="${label} 노력치">
-      <span class="stat-gain-value">+${value.gain}</span>
       <span class="stat-current-value">${value.current}</span>
     </div>`;
   }).join('');
@@ -273,14 +279,14 @@ function readStatsEditor(){
 
 function updateStatsEditor(){
   const stats = readStatsEditor();
+  const level = clampNumber($('#editLevel').value || editing?.level || 1, 1, 100);
   let used = 0;
   $('#statsEditor').querySelectorAll('.stat-editor-row').forEach(row => {
-    const value = statValues({stats}, row.dataset.stat);
+    const value = statValues({stats, level}, row.dataset.stat);
     const evInput = row.querySelector('.stat-ev-input');
     const baseInput = row.querySelector('.stat-base-input');
     if (Number(evInput.value) !== value.ev) evInput.value = value.ev;
     if (Number(baseInput.value) !== value.base) baseInput.value = value.base;
-    row.querySelector('.stat-gain-value').textContent = `+${value.gain}`;
     row.querySelector('.stat-current-value').textContent = value.current;
     used += value.ev;
   });
@@ -357,6 +363,23 @@ function renderMoveLibrary(){
     .filter(move => !query || [move.name,move.type,move.category,move.description,move.learnMethod].join(' ').toLowerCase().includes(query));
   $('#moveLibrary').innerHTML = records.map(move => `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}<small>${esc(move.learnMethod||'')} ${move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''} · 우선도 ${esc(move.priority||0)}</small></div>`).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
 }
+
+function applySpeciesBaseStats(){
+  const species = $('#editSpecies').value.trim();
+  const found = baseStatsByName[species];
+  if (!found?.stats) return;
+  const current = readStatsEditor();
+  STAT_DEFS.forEach(([key]) => {
+    current[key].base = clampNumber(found.stats[key], 0, 999);
+  });
+  editing.stats = current;
+  renderStatsEditor();
+  say(`${species}의 기본 능력치를 불러왔어요`);
+}
+
+$('#editSpecies').addEventListener('change', applySpeciesBaseStats);
+$('#editLevel').addEventListener('input', updateStatsEditor);
+$('#editLevel').addEventListener('change', updateStatsEditor);
 
 $('#editAbility').addEventListener('change', () => {
   $('#editAbilityEffect').value = abilityDescription($('#editAbility').value);

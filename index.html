@@ -32,7 +32,7 @@
       <input id="editId" type="hidden" />
       <div class="form-grid">
         <label>별명<input id="editNickname" required /></label>
-        <label>종류<input id="editSpecies" required /></label>
+        <label>종류<input id="editSpecies" list="speciesList" required /><datalist id="speciesList"></datalist></label>
         <label>레벨<input id="editLevel" type="number" min="1" max="100" required /></label>
         <label>타입<input id="editTypes" placeholder="예: 물, 땅" /></label>
         <label>특성<select id="editAbility"><option value="">특성 선택</option></select></label>
@@ -43,8 +43,8 @@
       <label>특성 효과<textarea id="editAbilityEffect" rows="2" readonly></textarea></label>
       <label>도구 효과<textarea id="editItemEffect" rows="2" readonly></textarea></label>
       <fieldset class="stats-editor-fieldset">
-        <legend>능력치 · 기본 능력치 + 노력치 증가분 = 현재 능력치</legend>
-        <div class="stats-editor-head"><span>능력치</span><span>기본</span><span>EV</span><span>증가</span><span>현재</span></div>
+        <legend>능력치 · 포켓몬별 레벨로 자동 계산</legend>
+        <div class="stats-editor-head"><span>능력치</span><span>기본</span><span>노력치</span><span>현재</span></div>
         <div id="statsEditor" class="stats-editor"></div>
         <div class="ev-summary"><span>사용한 노력치</span><strong id="evUsed">0 / 510</strong><span id="evRemaining">남음 510</span></div>
         <p id="evWarning" class="ev-warning" hidden></p>

@@ -325,9 +325,9 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .stats-panel{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#f8fafb}
 .stats-panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:850;color:var(--navy)}
 .stats-panel-title small{font-size:.68rem;color:var(--muted)}
-.stat-display-row{display:grid;grid-template-columns:42px minmax(118px,auto) 50px;gap:7px;align-items:center;padding:5px 0;font-size:.75rem}
+.stat-display-row{display:grid;grid-template-columns:42px minmax(150px,1fr);gap:7px;align-items:center;padding:5px 0;font-size:.75rem}
 .stat-label{font-weight:850;color:#30495a}
-.stat-equation{display:grid;grid-template-columns:32px 34px 10px 36px;align-items:center;font-variant-numeric:tabular-nums}
+.stat-equation{display:grid;grid-template-columns:34px 62px 18px 40px;align-items:center;font-variant-numeric:tabular-nums}
 .stat-equation b{color:#6d7b85;font-weight:750;text-align:right}
 .stat-equation i{color:#258361;font-style:normal;font-weight:900;text-align:right}
 .stat-equation em{color:#9aa5ad;font-style:normal;text-align:center}
@@ -336,7 +336,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .stat-bar{grid-column:2 / 4;height:4px;border-radius:99px;background:#e2e9ed;overflow:hidden}
 .stat-bar>span{display:block;height:100%;border-radius:inherit;background:#3b82f6}
 .stats-editor-fieldset{display:grid;gap:9px}
-.stats-editor-head,.stat-editor-row{display:grid;grid-template-columns:minmax(62px,1fr) 76px 76px 52px 58px;gap:7px;align-items:center}
+.stats-editor-head,.stat-editor-row{display:grid;grid-template-columns:minmax(62px,1fr) 76px 76px 64px;gap:7px;align-items:center}
 .stats-editor-head{padding:0 3px;color:var(--muted);font-size:.68rem;font-weight:850;text-align:center}
 .stats-editor-head span:first-child{text-align:left}
 .stat-editor-row strong{font-size:.82rem;color:#30495a}
@@ -349,7 +349,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .ev-warning{margin:0;text-align:right;font-size:.76rem;font-weight:800}
 .battle-stats-panel{margin-top:0;background:#fff}
 @media(max-width:560px){
-  .stats-editor-head,.stat-editor-row{grid-template-columns:52px minmax(55px,1fr) minmax(55px,1fr) 43px 48px;gap:5px}
+  .stats-editor-head,.stat-editor-row{grid-template-columns:52px minmax(58px,1fr) minmax(58px,1fr) 56px;gap:5px}
   .stat-editor-row input{padding:8px 3px}
   .stat-display-row{grid-template-columns:38px minmax(112px,1fr) 46px}
 }

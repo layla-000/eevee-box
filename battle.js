@@ -7,6 +7,7 @@ let pokemonCatalog = [];
 let abilities = [];
 let items = [];
 let moves = [];
+let baseStatsByName = {};
 let battle = emptyBattle();
 
 const $ = selector => document.querySelector(selector);
@@ -60,6 +61,7 @@ function emptyOpponent(){
     types:'',
     ability:'',
     item:'',
+    stats: normalizedStats({}),
     moves:['', '', '', '']
   };
 }
@@ -101,7 +103,7 @@ async function api(action, payload = {}){
 async function load(){
   setSync(false, '불러오는 중');
 
-  [pokemonCatalog, abilities, items, moves] = await Promise.all([
+  [pokemonCatalog, abilities, items, moves, baseStatsByName] = await Promise.all([
     fetch('pokemon-catalog.json').then(response => {
       if (!response.ok) throw new Error(`pokemon-catalog.json ${response.status}`);
       return response.json();
@@ -116,6 +118,10 @@ async function load(){
     }),
     fetch('moves.json').then(response => {
       if (!response.ok) throw new Error(`moves.json ${response.status}`);
+      return response.json();
+    }),
+    fetch('pokemon-base-stats-by-name.json').then(response => {
+      if (!response.ok) throw new Error(`pokemon-base-stats-by-name.json ${response.status}`);
       return response.json();
     })
   ]);
@@ -173,6 +179,7 @@ function normalizeBattle(value){
             .map(value => value.trim())
             .filter(Boolean);
         }
+        normalized.stats = normalizedStats(normalized);
         normalized.moves = [...(normalized.moves || []), '', '', '', ''].slice(0,4);
         return normalized;
       })
@@ -297,6 +304,71 @@ function updateMyPreview(slot, id){
   `;
 }
 
+function applySpeciesBaseStats(record, speciesName){
+  const source = baseStatsByName?.[speciesName]?.stats || {};
+  const previous = normalizedStats(record);
+  record.stats = Object.fromEntries(STAT_DEFS.map(([key]) => [key, {
+    base: Math.max(0, Number(source[key]) || 0),
+    ev: previous[key].ev
+  }]));
+}
+
+function calculateBattleStat(key, base, ev, level){
+  const safeLevel = Math.max(1, Math.min(100, Math.floor(Number(level) || 1)));
+  const safeBase = Math.max(0, Number(base) || 0);
+  const safeEv = Math.max(0, Math.min(252, Math.floor(Number(ev) || 0)));
+  const scaled = Math.floor(((safeBase * 2) + Math.floor(safeEv / 4)) * safeLevel / 100);
+  return (key === 'hp' ? scaled + safeLevel + 10 : scaled + 5) + HOUSE_STAT_BONUS;
+}
+
+function renderOpponentStatsPanel(container, record, selectedPokemon){
+  if (!selectedPokemon){
+    container.className = 'opponent-stats-panel empty-auto-field';
+    container.textContent = '포켓몬을 선택하면 기본 능력치가 표시돼요.';
+    return;
+  }
+
+  const source = baseStatsByName?.[selectedPokemon.name]?.stats || {};
+  if (!record.stats || STAT_DEFS.some(([key]) => Number(record.stats?.[key]?.base) !== Number(source[key] || 0))){
+    applySpeciesBaseStats(record, selectedPokemon.name);
+  }
+  const stats = normalizedStats(record);
+  record.stats = stats;
+  const used = STAT_DEFS.reduce((sum,[key]) => sum + stats[key].ev, 0);
+  const remaining = 510 - used;
+
+  container.className = 'opponent-stats-panel';
+  container.innerHTML = `
+    <div class="opponent-stats-head">
+      <strong>능력치</strong>
+      <span class="opp-ev-total ${remaining < 0 ? 'over' : ''}">${used} / 510 EV · 남음 ${remaining}</span>
+    </div>
+    <div class="opponent-stat-columns"><span>능력치</span><span>기본</span><span>노력치</span><span>최종</span></div>
+    ${STAT_DEFS.map(([key,label]) => `
+      <div class="opponent-stat-row" data-stat="${key}">
+        <strong>${label}</strong>
+        <span class="opp-base-stat">${stats[key].base}</span>
+        <input class="opp-stat-ev" type="number" min="0" max="252" step="4" value="${stats[key].ev}" aria-label="${label} 노력치" />
+        <span class="opp-final-stat">${calculateBattleStat(key, stats[key].base, stats[key].ev, record.level)}</span>
+      </div>
+    `).join('')}
+    <p class="opp-ev-warning"${remaining >= 0 ? ' hidden' : ''}>노력치 총합은 510을 넘을 수 없어요.</p>
+    <small class="house-rule-note">최종 능력치에는 하우스룰 +${HOUSE_STAT_BONUS}가 적용돼요.</small>
+  `;
+
+  container.querySelectorAll('.opp-stat-ev').forEach(input => {
+    input.addEventListener('input', () => {
+      const row = input.closest('.opponent-stat-row');
+      const key = row.dataset.stat;
+      let value = Math.max(0, Math.min(252, Math.floor(Number(input.value) || 0)));
+      input.value = value;
+      record.stats[key].ev = value;
+      renderOpponentStatsPanel(container, record, selectedPokemon);
+      persistLocal();
+    });
+  });
+}
+
 function renderOpponentTeam(){
   const container = $('#opponentTeam');
   container.innerHTML = '';
@@ -313,6 +385,7 @@ function renderOpponentTeam(){
     const itemSelect = fragment.querySelector('.opp-item');
     const abilityDetail = fragment.querySelector('.opp-ability-detail');
     const itemDetail = fragment.querySelector('.opp-item-detail');
+    const statsPanel = fragment.querySelector('.opponent-stats-panel');
 
     fillPokemonCatalogSelect(pokemonSelect, record.catalogId, record.name);
 
@@ -321,6 +394,7 @@ function renderOpponentTeam(){
       record.catalogId = selectedPokemon.id;
       record.name = selectedPokemon.name;
       record.types = selectedPokemon.types.join(', ');
+      applySpeciesBaseStats(record, selectedPokemon.name);
       if (record.ability && !selectedPokemon.abilities.includes(record.ability)){
         record.ability = '';
       }
@@ -333,6 +407,7 @@ function renderOpponentTeam(){
 
     updateAbilityDetail(abilityDetail, record.ability);
     updateItemDetail(itemDetail, record.item);
+    renderOpponentStatsPanel(statsPanel, record, selectedPokemon);
 
     pokemonSelect.addEventListener('change', () => {
       const selected = pokemonCatalog.find(item => item.id === pokemonSelect.value);
@@ -345,6 +420,8 @@ function renderOpponentTeam(){
         updateOpponentTypes(typesDisplay, null);
         fillPokemonAbilitySelect(abilitySelect, null, '');
         updateAbilityDetail(abilityDetail, '');
+        record.stats = normalizedStats({});
+        renderOpponentStatsPanel(statsPanel, record, null);
         persistLocal();
         updateCounts();
         return;
@@ -354,16 +431,19 @@ function renderOpponentTeam(){
       record.name = selected.name;
       record.types = selected.types.join(', ');
       record.ability = '';
+      applySpeciesBaseStats(record, selected.name);
 
       updateOpponentTypes(typesDisplay, selected);
       fillPokemonAbilitySelect(abilitySelect, selected, '');
       updateAbilityDetail(abilityDetail, '');
+      renderOpponentStatsPanel(statsPanel, record, selected);
       persistLocal();
       updateCounts();
     });
 
     levelInput.addEventListener('input', () => {
       record.level = levelInput.value;
+      renderOpponentStatsPanel(statsPanel, record, findCatalogPokemon(record.catalogId, record.name));
       persistLocal();
     });
 

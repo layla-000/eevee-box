@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#17324d" />
+  <meta name="theme-color" content="#78A4CB" />
   <title>Eevee Box</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="type-colors.css" />
@@ -21,7 +21,7 @@
   </div>
 
   <header class="topbar">
-    <div><p class="eyebrow">PERSONAL POKÉMON DATABASE</p><h1>Eevee Box</h1></div>
+    <div class="brand-block"><p class="eyebrow">PERSONAL POKÉMON DATABASE</p><div class="brand-row"><h1>Eevee Box</h1><a class="header-battle-link" href="battle.html">Battle Page</a></div></div>
     <div class="sync"><span id="syncDot" class="dot"></span><span id="syncText">Supabase</span><button id="logoutButton" class="logout-button" type="button">로그아웃</button></div>
   </header>
   <main>
@@ -29,8 +29,6 @@
       <label class="search"><span>검색</span><input id="searchInput" placeholder="이름, 종류, 타입" /></label>
       <label><span>타입</span><select id="typeFilter"><option value="">전체</option></select></label>
       <button id="addButton" class="primary">+ 포켓몬 추가</button>
-      <button id="syncButton">동기화</button>
-      <a class="button-link" href="battle.html">3:3 배틀</a>
     </section>
     <section class="summary"><strong id="countText">0마리</strong><span>카드의 + / − 버튼으로 레벨을 바로 바꿀 수 있어요.</span></section>
     <section id="grid" class="grid" aria-live="polite"></section>

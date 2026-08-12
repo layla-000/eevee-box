@@ -447,19 +447,6 @@ $('#addButton').onclick = () => openEditor();
 $('#searchInput').oninput = render;
 $('#typeFilter').onchange = render;
 $('#moveSearch').oninput = renderMoveLibrary;
-$('#syncButton').onclick = async () => {
-  try {
-    const result = await api('get_all');
-    data = result.records || [];
-    render();
-    setSync(true);
-    say('Supabase에서 새로 불러왔어요');
-  } catch (error){
-    console.error(error);
-    setSync(false);
-    say('새로고침에 실패했어요');
-  }
-};
 
 function esc(value){
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

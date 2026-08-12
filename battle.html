@@ -10,6 +10,16 @@
   <link rel="stylesheet" href="move-category-colors.css" />
 </head>
 <body>
+  <div class="login-screen" id="loginScreen" hidden>
+    <form class="login-card" id="loginForm">
+      <p class="eyebrow">PRIVATE ACCESS</p><h2>Eevee Box</h2>
+      <p>Supabase 계정으로 로그인해 주세요.</p>
+      <label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
+      <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Login</button><p class="login-error" id="loginError"></p>
+    </form>
+  </div>
+
   <header class="topbar">
     <div>
       <p class="eyebrow">SINGLE BATTLE PLANNER</p>
@@ -17,7 +27,7 @@
     </div>
     <div class="sync">
       <span id="syncDot" class="dot"></span>
-      <span id="syncText">불러오는 중</span>
+      <span id="syncText">불러오는 중</span><button id="logoutButton" class="logout-button" type="button">로그아웃</button>
     </div>
   </header>
 
@@ -155,7 +165,11 @@
   </template>
 
   <div id="toast" class="toast" role="status"></div>
-  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.config.js"></script>
+  <script src="supabase-data.js"></script>
+  <script src="auth.js"></script>
+  <script src="type-matchups.js"></script>
   <script src="battle.js"></script>
   <script src="type-colors.js"></script>
   <script src="move-category-colors.js"></script>

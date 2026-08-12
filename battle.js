@@ -1,7 +1,3 @@
-const CONFIG = window.EEVEE_BOX_CONFIG || {};
-const POKEMON_KEY = 'EEVEE_BOX_DATA_V1';
-const BATTLE_KEY = 'EEVEE_BOX_BATTLE_V1';
-const BATTLE_SAVES_KEY = 'EEVEE_BOX_BATTLE_SAVES_V2';
 
 let pokemon = [];
 let pokemonCatalog = [];
@@ -79,108 +75,56 @@ function say(message){
 
 function setSync(ok, text){
   $('#syncDot').classList.toggle('online', ok);
-  $('#syncText').textContent = text || (ok ? '웹 동기화' : '로컬 모드');
+  $('#syncText').textContent = text || (ok ? 'Supabase 연결' : 'Supabase 연결 끊김');
 }
 
 async function api(action, payload = {}){
-  if (!CONFIG.apiEndpoint) throw new Error('API endpoint missing');
-
-  const response = await fetch(CONFIG.apiEndpoint, {
-    method: 'POST',
-    headers: {'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({action, ...payload}),
-    redirect: 'follow'
-  });
-
-  const text = await response.text();
-  if (!response.ok) throw new Error(`API HTTP ${response.status}: ${text.slice(0,160)}`);
-
-  let result;
-  try {
-    result = JSON.parse(text);
-  } catch (_) {
-    throw new Error(`API가 JSON 대신 다른 응답을 반환했어요: ${text.slice(0,160)}`);
-  }
-  if (!result.ok) throw new Error(result.error || 'API error');
-  return result;
+  if (!window.EeveeBackend) throw new Error('Supabase backend missing');
+  return window.EeveeBackend.api(action, payload);
 }
 
 async function load(){
-  setSync(false, '불러오는 중');
+  setSync(false, 'Supabase 불러오는 중');
+  try {
+    const [speciesResult, abilitiesResult, itemsResult, movesResult, pokemonResult, battleResult] = await Promise.all([
+      api('list_species'),
+      api('list_abilities'),
+      api('list_items'),
+      api('list_moves'),
+      api('get_all'),
+      api('list_battles')
+    ]);
 
-  [pokemonCatalog, abilities, items, moves, baseStatsByName] = await Promise.all([
-    fetch('pokemon-catalog.json').then(response => {
-      if (!response.ok) throw new Error(`pokemon-catalog.json ${response.status}`);
-      return response.json();
-    }),
-    fetch('abilities.json').then(response => {
-      if (!response.ok) throw new Error(`abilities.json ${response.status}`);
-      return response.json();
-    }),
-    fetch('items.json').then(response => {
-      if (!response.ok) throw new Error(`items.json ${response.status}`);
-      return response.json();
-    }),
-    fetch('moves.json').then(response => {
-      if (!response.ok) throw new Error(`moves.json ${response.status}`);
-      return response.json();
-    }),
-    fetch('pokemon-base-stats-by-name.json').then(response => {
-      if (!response.ok) throw new Error(`pokemon-base-stats-by-name.json ${response.status}`);
-      return response.json();
-    })
-  ]);
+    pokemonCatalog = (speciesResult.species || []).map(record => ({
+      id: record.id,
+      name: record.name,
+      types: record.types || [],
+      stats: record.baseStats || {},
+      abilities: record.abilities || []
+    })).sort((a,b) => a.name.localeCompare(b.name,'ko'));
+    baseStatsByName = Object.fromEntries(pokemonCatalog.map(record => [record.name, {stats:record.stats || {}}]));
+    abilities = (abilitiesResult.abilities || []).slice().sort((a,b) => a.name.localeCompare(b.name,'ko'));
+    items = (itemsResult.items || []).slice().sort((a,b) => a.name.localeCompare(b.name,'ko'));
+    moves = (movesResult.moves || []).slice().sort((a,b) => a.name.localeCompare(b.name,'ko'));
+    pokemon = pokemonResult.records || [];
+    battleSaves = Array.isArray(battleResult.battles) ? battleResult.battles.map(normalizeBattle) : [];
 
-  pokemonCatalog.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-  abilities.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-  items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-  moves.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-
-  const localPokemon = JSON.parse(localStorage.getItem(POKEMON_KEY) || 'null');
-  if (Array.isArray(localPokemon)) {
-    pokemon = localPokemon;
-  } else {
-    pokemon = await fetch('pokemon-data.json').then(r => r.json());
-  }
-
-  const localBattle = JSON.parse(localStorage.getItem(BATTLE_KEY) || 'null');
-  const localSaves = JSON.parse(localStorage.getItem(BATTLE_SAVES_KEY) || '[]');
-  if (localBattle) {
-    battle = normalizeBattle(localBattle);
-    activeBattleId = battle.id || '';
-  }
-  if (Array.isArray(localSaves)) battleSaves = localSaves.map(normalizeBattle);
-
-  if (CONFIG.apiEndpoint){
-    try {
-      const [pokemonResult, battleResult] = await Promise.all([
-        api('get_all'),
-        api('list_battles')
-      ]);
-      if (pokemonResult.records?.length) pokemon = pokemonResult.records;
-      battleSaves = Array.isArray(battleResult.battles)
-        ? battleResult.battles.map(normalizeBattle)
-        : [];
-
-      // 이 기기에 작업 중인 초안이 없으면 가장 최근의 클라우드 저장본을 열어요.
-      if (!localBattle && battleSaves.length){
-        battle = normalizeBattle(battleSaves[0]);
-        activeBattleId = battle.id || '';
-      }
-
-      localStorage.setItem(POKEMON_KEY, JSON.stringify(pokemon));
-      localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-      localStorage.setItem(BATTLE_SAVES_KEY, JSON.stringify(battleSaves));
-      setSync(true, '클라우드 동기화');
-    } catch (error){
-      console.warn(error);
-      setSync(false, '오프라인 · 로컬 캐시');
+    if (battleSaves.length){
+      sortBattleSaves();
+      battle = normalizeBattle(battleSaves[0]);
+      activeBattleId = battle.id || '';
+    } else {
+      battle = emptyBattle();
+      activeBattleId = '';
     }
-  } else {
-    setSync(false);
+    setSync(true, 'Supabase 연결');
+    render();
+  } catch (error){
+    console.error('Supabase battle load failed', error);
+    setSync(false, 'Supabase 연결 실패');
+    say('Supabase 데이터를 불러오지 못했어요');
+    throw error;
   }
-
-  render();
 }
 
 function normalizeBattle(value){
@@ -623,7 +567,6 @@ function readPageValues(){
 
 function persistLocal(){
   readPageValues();
-  localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
 }
 
 function makeBattleId(){
@@ -631,9 +574,7 @@ function makeBattleId(){
   return `battle_${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
 }
 
-function cacheBattleSaves(){
-  localStorage.setItem(BATTLE_SAVES_KEY, JSON.stringify(battleSaves));
-}
+function cacheBattleSaves(){}
 
 function sortBattleSaves(){
   battleSaves.sort((a,b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
@@ -682,14 +623,12 @@ function loadSavedBattle(id){
   if (!saved) return;
   battle = normalizeBattle(JSON.parse(JSON.stringify(saved)));
   activeBattleId = battle.id;
-  localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
   render();
   window.scrollTo({top:0, behavior:'smooth'});
   say(`“${battle.title || '이름 없는 배틀'}”을 불러왔어요`);
 }
 
 async function refreshBattleSaves({silent = false} = {}){
-  if (!CONFIG.apiEndpoint) return;
   try {
     const result = await api('list_battles');
     battleSaves = Array.isArray(result.battles) ? result.battles.map(normalizeBattle) : [];
@@ -699,7 +638,7 @@ async function refreshBattleSaves({silent = false} = {}){
     if (!silent) say('다른 기기의 저장 목록까지 새로 불러왔어요');
   } catch (error){
     console.warn(error);
-    setSync(false, '오프라인 · 로컬 캐시');
+    setSync(false, 'Supabase 연결 실패');
     if (!silent) say('클라우드 목록을 불러오지 못했어요');
   }
 }
@@ -724,18 +663,6 @@ async function saveBattle(){
 
   battle.id = activeBattleId;
   battle.updatedAt = new Date().toISOString();
-  localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-
-  if (!CONFIG.apiEndpoint){
-    const index = battleSaves.findIndex(item => item.id === battle.id);
-    if (index >= 0) battleSaves[index] = normalizeBattle(battle);
-    else battleSaves.unshift(normalizeBattle(battle));
-    cacheBattleSaves();
-    renderBattleSaves();
-    setSync(false);
-    say('이 기기에만 저장했어요');
-    return;
-  }
 
   try {
     const result = await api('save_battle', {battle});
@@ -745,13 +672,12 @@ async function saveBattle(){
     if (index >= 0) battleSaves[index] = normalizeBattle(battle);
     else battleSaves.unshift(normalizeBattle(battle));
     cacheBattleSaves();
-    localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-    renderBattleSaves();
+      renderBattleSaves();
     setSync(true, '클라우드 동기화');
     say('모든 기기에서 볼 수 있게 저장했어요');
   } catch (error){
     console.warn(error);
-    setSync(false, '저장 실패 · 로컬 초안 유지');
+    setSync(false, 'Supabase 저장 실패');
     say('클라우드 저장에 실패했어요');
   }
 }
@@ -765,17 +691,14 @@ async function renameSavedBattle(id){
   if (!title) return say('이름은 비워둘 수 없어요');
 
   try {
-    const result = CONFIG.apiEndpoint
-      ? await api('rename_battle', {id, title})
-      : {battle:{...saved, title, updatedAt:new Date().toISOString()}};
+    const result = await api('rename_battle', {id, title});
     const renamed = normalizeBattle(result.battle);
     const index = battleSaves.findIndex(item => item.id === id);
     if (index >= 0) battleSaves[index] = renamed;
     if (activeBattleId === id){
       battle.title = title;
       battle.updatedAt = renamed.updatedAt;
-      localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-      $('#battleTitle').value = title;
+          $('#battleTitle').value = title;
     }
     cacheBattleSaves();
     renderBattleSaves();
@@ -790,13 +713,12 @@ async function deleteSavedBattle(id){
   const saved = battleSaves.find(item => item.id === id);
   if (!saved || !confirm(`“${saved.title || '이름 없는 배틀'}” 저장본을 삭제할까요?`)) return;
   try {
-    if (CONFIG.apiEndpoint) await api('delete_battle', {id});
+    await api('delete_battle', {id});
     battleSaves = battleSaves.filter(item => item.id !== id);
     if (activeBattleId === id){
       activeBattleId = '';
       battle.id = '';
-      localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
-    }
+        }
     cacheBattleSaves();
     renderBattleSaves();
     say('저장본을 삭제했어요');
@@ -810,7 +732,6 @@ function clearBattle(){
   if (!confirm('현재 편집 중인 3:3 배틀 구성을 모두 비울까요? 저장 목록은 삭제되지 않아요.')) return;
   battle = emptyBattle();
   activeBattleId = '';
-  localStorage.setItem(BATTLE_KEY, JSON.stringify(battle));
   render();
   say('새 배틀을 시작했어요');
 }
@@ -840,7 +761,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('focus', () => refreshBattleSaves({silent:true}));
 setInterval(() => { if (!document.hidden) refreshBattleSaves({silent:true}); }, 30000);
 
-load().catch(error => {
+window.EeveeAuth.ready.then(() => load()).catch(error => {
   console.error(error);
   setSync(false);
   say('페이지를 불러오지 못했어요');

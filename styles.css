@@ -424,3 +424,60 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
   .battle-save-card{grid-template-columns:1fr}
   .battle-save-actions{justify-content:flex-end}
 }
+
+/* Supabase auth + type matchup */
+.login-screen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:rgba(23,50,77,.72);backdrop-filter:blur(10px)}
+.login-screen[hidden]{display:none}.login-card{width:min(390px,100%);padding:26px;border-radius:20px;background:#fff;box-shadow:0 24px 80px #0005;display:grid;gap:13px}.login-card h2{margin:0;font-size:26px;color:var(--navy)}.login-card p{margin:0;color:var(--muted)}.login-card label{display:grid;gap:6px;font-size:12px;color:var(--muted)}.login-error{min-height:1.2em;color:var(--red)!important;font-size:12px}.logout-button{padding:5px 9px;border-color:#ffffff55;background:transparent;color:#fff;font-size:11px}.sync{flex-wrap:wrap;justify-content:flex-end}.matchup-summary{margin:12px 0;padding:10px 11px;border:1px solid var(--line);border-radius:12px;background:#fafcfc;display:grid;gap:7px}.matchup-title{font-size:11px;font-weight:800;color:var(--navy);letter-spacing:.04em}.matchup-summary>div:not(.matchup-title){display:flex;align-items:center;gap:5px;flex-wrap:wrap}.matchup-summary b{width:54px;font-size:10px;color:var(--muted)}.matchup-type{display:inline-flex;padding:3px 6px;border-radius:999px;background:#edf3f4;font-size:10px;font-weight:700}
+
+/* Type matchup v2 */
+.matchup-summary{
+  margin:14px 0;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:linear-gradient(180deg,#fbfdfd 0%,#f7fafb 100%);
+  display:grid;
+  gap:10px;
+}
+.matchup-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.matchup-title-row>div{display:grid;gap:1px}
+.matchup-title-row strong{font-size:.82rem;color:var(--navy)}
+.matchup-title-row small{font-size:.66rem;color:var(--muted);white-space:nowrap}
+.matchup-kicker{font-size:.56rem;font-weight:900;letter-spacing:.12em;color:#8a9aa4}
+.matchup-panel{display:grid;gap:7px;padding:10px;border-radius:11px;background:#fff;border:1px solid #e7edef}
+.matchup-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:3px}
+.matchup-panel-head strong{font-size:.72rem;color:#3d5668}
+.matchup-panel-head span{font-size:.67rem;font-weight:800;color:#7c8b95}
+.matchup-row{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:start;gap:7px}
+.matchup-label{display:inline-flex;align-items:center;min-height:24px;font-size:.63rem;font-weight:900;color:#637681}
+.matchup-pills{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.matchup-type{min-height:24px;padding:4px 8px;font-size:.65rem}
+.matchup-danger-strong .matchup-label{color:#b42318}
+.matchup-danger .matchup-label{color:#d04a3a}
+.matchup-immune .matchup-label{color:#5c6670}
+.matchup-resist-strong .matchup-label{color:#087a66}
+.matchup-resist .matchup-label{color:#218b78}
+.matchup-neutral{border-top:1px dashed #e3e9ec;padding-top:7px}
+.matchup-neutral summary{cursor:pointer;list-style:none;font-size:.64rem;font-weight:800;color:#84919a;user-select:none}
+.matchup-neutral summary::-webkit-details-marker{display:none}
+.matchup-neutral summary::before{content:'＋';display:inline-block;width:18px;color:#91a0a9}
+.matchup-neutral[open] summary::before{content:'−'}
+.matchup-neutral summary span{font-weight:600;margin-left:4px}
+.matchup-neutral .matchup-pills{padding:7px 0 1px 18px}
+@media (max-width:700px){
+  .matchup-summary{padding:10px;gap:8px}
+  .matchup-panel{padding:9px}
+  .matchup-row{grid-template-columns:54px minmax(0,1fr);gap:5px}
+  .matchup-type{min-height:23px;padding:4px 7px;font-size:.62rem}
+}
+
+
+/* Offensive type matchup */
+.matchup-offense-summary{background:linear-gradient(180deg,#fbfdfc 0%,#f7fbf9 100%)}
+.matchup-offense-summary .matchup-kicker{color:#738f83}
+.matchup-offense-panel{border-color:#e2ece7}
+.matchup-coverage-panel{background:#f8fcfa;border-color:#dbe9e2}
+.matchup-attack-strong .matchup-label{color:#16734f}
+.matchup-attack-resist .matchup-label{color:#9a6b16}
+.matchup-subtitle{margin:3px 1px -2px;font-size:.65rem;font-weight:900;color:#6e7f78}
+.matchup-tera-offense{display:grid;gap:7px;padding-top:2px;border-top:1px dashed #dfe8e3}

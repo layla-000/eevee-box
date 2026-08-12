@@ -1026,3 +1026,78 @@ details summary{color:#5A82A4}
     gap:8px;
   }
 }
+
+
+/* Battle Box v3.2.5 — restore requested MY TEAM card structure */
+.battle-slots{
+  grid-template-columns:1fr !important;
+}
+
+.selected-pokemon-preview{
+  display:grid;
+  gap:12px;
+}
+
+.my-identity-line{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  padding:2px 0 4px;
+  color:#29485F;
+  font-weight:700;
+}
+.my-identity-line .my-nickname{
+  font-size:1.05rem;
+  font-weight:900;
+}
+.identity-separator{
+  color:#91A4B0;
+  font-weight:500;
+}
+.my-identity-line .type-pill,
+.my-identity-line .tera-pill{
+  margin:0;
+}
+
+.my-reference-line{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  min-width:0;
+  padding:11px 14px;
+  border:1px solid #DCE8ED;
+  border-radius:13px;
+  background:#FBFEFE;
+  line-height:1.45;
+}
+.my-reference-line strong{
+  flex:0 0 auto;
+  color:#29485F;
+  white-space:nowrap;
+}
+.my-reference-line span{
+  min-width:0;
+  color:#607585;
+}
+
+.my-move-effects.my-move-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:10px;
+}
+.my-move-grid .my-move-effect-card{
+  min-width:0;
+}
+
+@media(max-width:640px){
+  .my-reference-line{
+    align-items:flex-start;
+    gap:7px;
+    padding:10px 11px;
+  }
+  .my-move-effects.my-move-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px;
+  }
+}

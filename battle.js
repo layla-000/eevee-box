@@ -274,32 +274,39 @@ function updateMyPreview(slot, id){
   const abilityRecord = abilities.find(item => item.name === record.ability);
   const itemRecord = items.find(item => item.name === record.heldItem);
 
+  const identityParts = [
+    record.nickname || '',
+    record.species || '',
+    ...(record.types || []),
+    record.teraType ? `테라 ${record.teraType}` : '',
+    `Lv.${Number(record.level || 1)}`
+  ].filter(Boolean);
+
   preview.className = 'selected-pokemon-preview';
   preview.innerHTML = `
-    <div class="preview-title">
-      <strong>${escapeHtml(record.nickname || record.species)}</strong>
-      <span>Lv.${Number(record.level || 1)}</span>
+    <div class="my-identity-line">
+      ${identityParts.map((value, index) => {
+        const isType = (record.types || []).includes(value);
+        const isTera = String(value).startsWith('테라 ');
+        if (isType) return `<span class="type-pill">${escapeHtml(value)}</span>`;
+        if (isTera) return `<span class="tera-pill">${escapeHtml(value)}</span>`;
+        return `<span class="${index === 0 ? 'my-nickname' : ''}">${escapeHtml(value)}</span>`;
+      }).join('<span class="identity-separator">·</span>')}
     </div>
-    <div class="preview-species">${escapeHtml(record.species || '')}</div>
-    <div class="preview-tags">
-      ${(record.types || []).map(type => `<span class="type-pill">${escapeHtml(type)}</span>`).join('')}
-      ${record.teraType ? `<span class="tera-pill">테라 ${escapeHtml(record.teraType)}</span>` : ''}
+
+    <div class="my-reference-line">
+      <strong>특성 · ${escapeHtml(record.ability || '없음')}</strong>
+      <span>${escapeHtml(abilityRecord?.description || record.abilityEffect || '효과 정보 없음')}</span>
+    </div>
+
+    <div class="my-reference-line">
+      <strong>도구 · ${escapeHtml(record.heldItem || '없음')}</strong>
+      <span>${escapeHtml(itemRecord?.description || '효과 정보 없음')}</span>
     </div>
 
     ${battleStatsPanel(record)}
 
-    <div class="my-reference-block">
-      <div class="my-reference-title">특성 · ${escapeHtml(record.ability || '없음')}</div>
-      <div class="my-reference-effect">${escapeHtml(abilityRecord?.description || record.abilityEffect || '효과 정보 없음')}</div>
-    </div>
-
-    <div class="my-reference-block">
-      <div class="my-reference-title">도구 · ${escapeHtml(record.heldItem || '없음')}</div>
-      <div class="my-reference-effect">${escapeHtml(itemRecord?.description || '효과 정보 없음')}</div>
-      ${itemRecord ? `<small>${escapeHtml([itemRecord.price, itemRecord.limit].filter(Boolean).join(' · '))}</small>` : ''}
-    </div>
-
-    <div class="my-move-effects">
+    <div class="my-move-effects my-move-grid">
       ${currentMoves.length
         ? currentMoves.map(moveName => {
             const move = moves.find(item => item.name === moveName);
@@ -329,7 +336,6 @@ function updateMyPreview(slot, id){
                   </div>
                 </div>
                 <div class="my-reference-effect">${escapeHtml(move.description || '효과 정보 없음')}</div>
-                ${move.target ? `<small>대상 ${escapeHtml(move.target)}</small>` : ''}
               </div>
             `;
           }).join('')

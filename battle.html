@@ -8,8 +8,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="type-colors.css" />
   <link rel="stylesheet" href="move-category-colors.css" />
-  <link rel="icon" href="data:,">
-</head>
+  <link rel="icon" href="data:,">\n</head>
 <body>
   <div class="login-screen" id="loginScreen" hidden>
     <form class="login-card" id="loginForm">
@@ -155,7 +154,10 @@
             <option value="">포켓몬 선택</option>
           </select>
           <div class="opp-types-display compact-types">타입</div>
-          <label class="opponent-level-inline"><span>Lv.</span><input class="opp-level" type="number" min="1" max="100" placeholder="45" /></label>
+          <div class="opponent-level-inline">
+            <span class="opponent-level-prefix">Lv.</span>
+            <input class="opp-level" type="number" min="1" max="100" placeholder="45" aria-label="상대 포켓몬 레벨" />
+          </div>
         </div>
 
         <div class="opponent-reference-row">

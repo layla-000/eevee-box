@@ -269,68 +269,81 @@ function updateMyPreview(slot, id){
   const currentMoves = (record.currentMoves || []).filter(Boolean);
   const abilityRecord = abilities.find(item => item.name === record.ability);
   const itemRecord = items.find(item => item.name === record.heldItem);
+  const displayName = record.nickname || '-';
+  const speciesName = record.species || '-';
+  const level = Number(record.level || 1);
 
-  preview.className = 'selected-pokemon-preview';
+  preview.className = 'selected-pokemon-preview my-compact-preview';
   preview.innerHTML = `
-    <div class="preview-title">
-      <strong>${escapeHtml(record.nickname || record.species)}</strong>
-      <span>Lv.${Number(record.level || 1)}</span>
-    </div>
-    <div class="preview-species">${escapeHtml(record.species || '')}</div>
-    <div class="preview-tags">
-      ${(record.types || []).map(type => `<span class="type-pill">${escapeHtml(type)}</span>`).join('')}
-      ${record.teraType ? `<span class="tera-pill">테라 ${escapeHtml(record.teraType)}</span>` : ''}
+    <div class="my-identity-row">
+      <strong class="my-nickname">${escapeHtml(displayName)}</strong>
+      <span class="identity-separator">·</span>
+      <span class="my-species-name">${escapeHtml(speciesName)}</span>
+      <div class="my-inline-types">
+        ${(record.types || []).map(type => `<span class="type-pill">${escapeHtml(type)}</span>`).join('') || '<span class="muted-inline">타입 없음</span>'}
+      </div>
+      <span class="tera-pill">테라 ${escapeHtml(record.teraType || '없음')}</span>
+      <span class="my-level-inline">Lv.${level}</span>
     </div>
 
-    ${battleStatsPanel(record)}
-
-    <div class="my-reference-block">
-      <div class="my-reference-title">특성 · ${escapeHtml(record.ability || '없음')}</div>
+    <div class="my-reference-row">
+      <span class="my-reference-label">특성</span>
+      <strong>${escapeHtml(record.ability || '없음')}</strong>
       <div class="my-reference-effect">${escapeHtml(abilityRecord?.description || record.abilityEffect || '효과 정보 없음')}</div>
     </div>
 
-    <div class="my-reference-block">
-      <div class="my-reference-title">도구 · ${escapeHtml(record.heldItem || '없음')}</div>
+    <div class="my-reference-row">
+      <span class="my-reference-label">도구</span>
+      <strong>${escapeHtml(record.heldItem || '없음')}</strong>
       <div class="my-reference-effect">${escapeHtml(itemRecord?.description || '효과 정보 없음')}</div>
       ${itemRecord ? `<small>${escapeHtml([itemRecord.price, itemRecord.limit].filter(Boolean).join(' · '))}</small>` : ''}
     </div>
 
-    <div class="my-move-effects">
-      ${currentMoves.length
-        ? currentMoves.map(moveName => {
-            const move = moves.find(item => item.name === moveName);
-            if (!move){
-              return `
-                <div class="my-move-effect-card">
-                  <div class="my-move-effect-head"><strong>${escapeHtml(moveName)}</strong></div>
-                  <div class="my-reference-effect">효과 정보 없음</div>
-                </div>
-              `;
-            }
+    ${battleStatsPanel(record)}
 
-            const stats = [
-              move.type,
-              move.category,
-              `위력 ${move.power || '-'}`,
-              `명중 ${move.accuracy || '-'}`,
-              `PP ${move.pp || '-'}`
-            ];
-
+    <div class="my-moves-block">
+      <div class="opponent-moves-title">기술 4개</div>
+      <div class="my-move-effects my-move-grid">
+        ${[0,1,2,3].map(index => {
+          const moveName = currentMoves[index] || '';
+          if (!moveName){
             return `
-              <div class="my-move-effect-card">
-                <div class="my-move-effect-head">
-                  <strong>${escapeHtml(moveName)}</strong>
-                  <div class="move-reference-head">
-                    ${stats.map(value => `<span>${escapeHtml(value)}</span>`).join('')}
-                  </div>
-                </div>
-                <div class="my-reference-effect">${escapeHtml(move.description || '효과 정보 없음')}</div>
-                ${move.target ? `<small>대상 ${escapeHtml(move.target)}</small>` : ''}
+              <div class="my-move-effect-card empty-move-card">
+                <div class="my-move-effect-head"><strong>기술 ${index + 1}</strong></div>
+                <div class="my-reference-effect">등록된 기술 없음</div>
               </div>
             `;
-          }).join('')
-        : '<div class="my-reference-effect">현재 기술 없음</div>'
-      }
+          }
+          const move = moves.find(item => item.name === moveName);
+          if (!move){
+            return `
+              <div class="my-move-effect-card">
+                <div class="my-move-effect-head"><strong>${escapeHtml(moveName)}</strong></div>
+                <div class="my-reference-effect">효과 정보 없음</div>
+              </div>
+            `;
+          }
+          const stats = [
+            move.type,
+            move.category,
+            `위력 ${move.power || '-'}`,
+            `명중 ${move.accuracy || '-'}`,
+            `PP ${move.pp || '-'}`
+          ];
+          return `
+            <div class="my-move-effect-card">
+              <div class="my-move-effect-head">
+                <strong>${escapeHtml(moveName)}</strong>
+                <div class="move-reference-head">
+                  ${stats.map(value => `<span>${escapeHtml(value)}</span>`).join('')}
+                </div>
+              </div>
+              <div class="my-reference-effect">${escapeHtml(move.description || '효과 정보 없음')}</div>
+              ${move.target ? `<small>대상 ${escapeHtml(move.target)}</small>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
     </div>
   `;
 }

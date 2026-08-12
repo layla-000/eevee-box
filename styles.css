@@ -680,3 +680,75 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
     grid-column:2;
   }
 }
+
+/* Battle Box v2.3 — unified team card layout */
+.opponent-number-row{
+  display:flex;
+  align-items:center;
+  min-height:24px;
+  padding-bottom:7px;
+  margin-bottom:2px;
+  border-bottom:1px solid var(--line);
+}
+.opponent-number-row .slot-number{
+  position:static;
+  margin:0;
+}
+
+.my-compact-preview{display:grid;gap:12px}
+.my-identity-row{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+  min-height:38px;
+  padding:9px 11px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+}
+.my-nickname{font-size:1rem;color:#17324d}
+.my-species-name{font-size:.88rem;font-weight:800;color:#425466}
+.identity-separator{color:var(--muted)}
+.my-inline-types{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.my-level-inline{margin-left:auto;font-size:.82rem;font-weight:800;color:#30495a;white-space:nowrap}
+.muted-inline{color:var(--muted);font-size:.76rem}
+
+.my-reference-row{
+  display:grid;
+  grid-template-columns:42px minmax(90px,auto) minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:40px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+}
+.my-reference-label{font-size:.72rem;font-weight:900;color:var(--muted);letter-spacing:.03em}
+.my-reference-row strong{font-size:.84rem;color:#20384d;white-space:nowrap}
+.my-reference-row .my-reference-effect{font-size:.77rem;color:#566575;min-width:0}
+.my-reference-row small{font-size:.68rem;color:var(--muted);white-space:nowrap}
+
+.my-moves-block{display:grid;gap:8px}
+.my-move-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.my-move-grid .my-move-effect-card{height:100%;margin:0}
+.empty-move-card{opacity:.68}
+
+@media (max-width:760px){
+  .my-level-inline{margin-left:0}
+  .my-reference-row{grid-template-columns:38px minmax(82px,auto) minmax(0,1fr)}
+  .my-reference-row small{grid-column:2 / -1}
+}
+@media (max-width:560px){
+  .my-reference-row{grid-template-columns:1fr;gap:4px}
+  .my-reference-row small{grid-column:auto}
+  .my-move-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .my-move-grid .move-reference-head{gap:3px}
+  .my-move-grid .move-reference-head span{font-size:.6rem}
+  .my-move-grid .my-reference-effect{font-size:.7rem}
+}

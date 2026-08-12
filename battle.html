@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#17324d" />
-  <title>3:3 Battle · Eevee Box</title>
+  <title>Battle Box · Eevee Box</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="type-colors.css" />
   <link rel="stylesheet" href="move-category-colors.css" />
@@ -22,8 +22,8 @@
 
   <header class="topbar">
     <div>
-      <p class="eyebrow">SINGLE BATTLE PLANNER</p>
-      <h1>3:3 Battle</h1>
+      <p class="eyebrow">BATTLE BOX</p>
+      <h1>Battle Box <span id="battleModeLabel" class="battle-mode-label">싱글 3:3</span></h1>
     </div>
     <div class="sync">
       <span id="syncDot" class="dot"></span>
@@ -40,6 +40,33 @@
       </label>
       <button id="saveBattle" class="primary">배틀 저장</button>
       <button id="clearBattle">초기화</button>
+    </section>
+
+    <section class="battle-setup-panel" aria-labelledby="battleSetupTitle">
+      <div class="battle-setup-head">
+        <div>
+          <p class="eyebrow">BATTLE SETUP</p>
+          <h2 id="battleSetupTitle">배틀 설정</h2>
+        </div>
+        <p id="leadHint" class="lead-hint" hidden>더블 배틀에서는 내 팀에서 선봉 2마리를 지정할 수 있어요.</p>
+      </div>
+      <div class="battle-setup-grid">
+        <div class="battle-choice-group">
+          <span class="field-caption">배틀 방식</span>
+          <div class="segmented-control" role="group" aria-label="배틀 방식">
+            <button type="button" data-battle-format="single" class="active" aria-pressed="true">싱글</button>
+            <button type="button" data-battle-format="double" aria-pressed="false">더블</button>
+          </div>
+        </div>
+        <div class="battle-choice-group">
+          <span class="field-caption">팀 규모</span>
+          <div class="segmented-control" role="group" aria-label="팀 규모">
+            <button type="button" data-team-size="3" class="active" aria-pressed="true">3:3</button>
+            <button type="button" data-team-size="4" aria-pressed="false">4:4</button>
+            <button type="button" data-team-size="6" aria-pressed="false">6:6</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="battle-saves-panel" aria-labelledby="battleSavesTitle">
@@ -62,7 +89,7 @@
         <div class="battle-side-head">
           <div>
             <p class="eyebrow">MY TEAM</p>
-            <h2>내 포켓몬 3마리</h2>
+            <h2 id="myTeamTitle">내 포켓몬 3마리</h2>
           </div>
           <span class="team-count" id="myCount">0 / 3</span>
         </div>
@@ -75,12 +102,22 @@
         <div class="battle-side-head">
           <div>
             <p class="eyebrow">OPPONENT</p>
-            <h2>상대 포켓몬 3마리</h2>
+            <h2 id="opponentTeamTitle">상대 포켓몬 3마리</h2>
           </div>
           <span class="team-count" id="opponentCount">0 / 3</span>
         </div>
         <div id="opponentTeam" class="battle-slots"></div>
       </div>
+    </section>
+
+    <section class="battle-analysis-panel" aria-labelledby="teamAnalysisTitle">
+      <div class="battle-analysis-head">
+        <div>
+          <p class="eyebrow">TEAM ANALYSIS</p>
+          <h2 id="teamAnalysisTitle">팀 상성 분석</h2>
+        </div>
+      </div>
+      <div id="teamAnalysis"><p class="analysis-empty">내 팀을 선택하면 타입 상성과 실제 기술 커버리지를 분석해요.</p></div>
     </section>
 
     <section class="battle-notes-panel">

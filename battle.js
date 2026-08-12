@@ -45,6 +45,9 @@ function emptyBattle(){
   return {
     id: '',
     title: '',
+    battleFormat: 'single',
+    teamSize: 3,
+    leadIndices: [],
     myTeam: ['', '', ''],
     opponentTeam: [emptyOpponent(), emptyOpponent(), emptyOpponent()],
     notes: '',
@@ -127,44 +130,70 @@ async function load(){
   }
 }
 
-function normalizeBattle(value){
+function normalizeBattle(value = {}){
   const result = emptyBattle();
+  const requestedSize = Number(value.teamSize || value.team_size || 0);
+  const inferredSize = Math.max(3, (value.myTeam || []).length, (value.opponentTeam || []).length);
+  const teamSize = [3,4,6].includes(requestedSize) ? requestedSize : ([3,4,6].includes(inferredSize) ? inferredSize : 3);
+  const battleFormat = value.battleFormat === 'double' || value.format === 'double' ? 'double' : 'single';
+  const myTeam = [...(value.myTeam || [])];
+  while (myTeam.length < teamSize) myTeam.push('');
+  const opponents = [...(value.opponentTeam || [])];
+  while (opponents.length < teamSize) opponents.push(emptyOpponent());
+  const leadIndices = battleFormat === 'double'
+    ? [...new Set((value.leadIndices || []).map(Number).filter(index => index >= 0 && index < teamSize))].slice(0,2)
+    : [];
   return {
     ...result,
     ...value,
-    myTeam: [...(value.myTeam || []), '', '', ''].slice(0,3),
-    opponentTeam: [...(value.opponentTeam || []), emptyOpponent(), emptyOpponent(), emptyOpponent()]
-      .slice(0,3)
-      .map(item => {
-        const normalized = {...emptyOpponent(), ...(item || {})};
-        if (typeof normalized.moves === 'string'){
-          normalized.moves = normalized.moves
-            .split(',')
-            .map(value => value.trim())
-            .filter(Boolean);
-        }
-        normalized.stats = normalizedStats(normalized);
-        normalized.moves = [...(normalized.moves || []), '', '', '', ''].slice(0,4);
-        return normalized;
-      })
+    battleFormat,
+    teamSize,
+    leadIndices,
+    myTeam: myTeam.slice(0, teamSize),
+    opponentTeam: opponents.slice(0, teamSize).map(item => {
+      const normalized = {...emptyOpponent(), ...(item || {})};
+      if (typeof normalized.moves === 'string'){
+        normalized.moves = normalized.moves.split(',').map(value => value.trim()).filter(Boolean);
+      }
+      normalized.stats = normalizedStats(normalized);
+      normalized.moves = [...(normalized.moves || []), '', '', '', ''].slice(0,4);
+      return normalized;
+    })
   };
 }
 
 function render(){
   $('#battleTitle').value = battle.title || '';
   $('#battleNotes').value = battle.notes || '';
-
+  syncBattleSetupUI();
   renderMyTeam();
   renderOpponentTeam();
   renderBattleSaves();
   updateCounts();
+  renderTeamAnalysis();
+}
+
+function syncBattleSetupUI(){
+  document.querySelectorAll('[data-battle-format]').forEach(button => {
+    button.classList.toggle('active', button.dataset.battleFormat === battle.battleFormat);
+    button.setAttribute('aria-pressed', button.dataset.battleFormat === battle.battleFormat ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-team-size]').forEach(button => {
+    button.classList.toggle('active', Number(button.dataset.teamSize) === battle.teamSize);
+    button.setAttribute('aria-pressed', Number(button.dataset.teamSize) === battle.teamSize ? 'true' : 'false');
+  });
+  const mode = battle.battleFormat === 'double' ? '더블' : '싱글';
+  $('#battleModeLabel').textContent = `${mode} ${battle.teamSize}:${battle.teamSize}`;
+  $('#myTeamTitle').textContent = `내 포켓몬 ${battle.teamSize}마리`;
+  $('#opponentTeamTitle').textContent = `상대 포켓몬 ${battle.teamSize}마리`;
+  $('#leadHint').hidden = battle.battleFormat !== 'double';
 }
 
 function renderMyTeam(){
   const container = $('#myTeam');
   container.innerHTML = '';
 
-  for (let index = 0; index < 3; index += 1){
+  for (let index = 0; index < battle.teamSize; index += 1){
     const fragment = $('#mySlotTemplate').content.cloneNode(true);
     const slot = fragment.querySelector('.battle-slot');
     slot.dataset.index = index;
@@ -173,22 +202,59 @@ function renderMyTeam(){
     const select = fragment.querySelector('.my-pokemon-select');
     select.innerHTML = [
       '<option value="">선택 안 함</option>',
-      ...pokemon
-        .slice()
-        .sort((a,b) => (a.order || 999) - (b.order || 999))
+      ...pokemon.slice().sort((a,b) => (a.order || 999) - (b.order || 999))
         .map(record => `<option value="${escapeHtml(record.id)}">${escapeHtml(record.nickname || record.species)} · ${escapeHtml(record.species)} · Lv.${Number(record.level || 1)}</option>`)
     ].join('');
     select.value = battle.myTeam[index] || '';
     select.addEventListener('change', () => {
       battle.myTeam[index] = select.value;
+      if (!select.value) battle.leadIndices = battle.leadIndices.filter(value => value !== index);
       updateMyPreview(slot, select.value);
+      renderLeadControl(slot, index);
       persistLocal();
       updateCounts();
+      renderTeamAnalysis();
     });
 
     container.appendChild(fragment);
-    updateMyPreview(container.lastElementChild, select.value);
+    const appended = container.lastElementChild;
+    updateMyPreview(appended, select.value);
+    renderLeadControl(appended, index);
   }
+}
+
+function renderLeadControl(slot, index){
+  let control = slot.querySelector('.lead-control');
+  if (!control){
+    control = document.createElement('button');
+    control.type = 'button';
+    control.className = 'lead-control';
+    slot.insertBefore(control, slot.querySelector('.selected-pokemon-preview'));
+  }
+  if (battle.battleFormat !== 'double'){
+    control.hidden = true;
+    return;
+  }
+  control.hidden = false;
+  const selected = Boolean(battle.myTeam[index]);
+  const isLead = battle.leadIndices.includes(index);
+  control.disabled = !selected;
+  control.classList.toggle('active', isLead);
+  control.textContent = isLead ? '★ 선봉' : '선봉 지정';
+  control.onclick = () => {
+    if (!battle.myTeam[index]) return;
+    if (isLead){
+      battle.leadIndices = battle.leadIndices.filter(value => value !== index);
+    } else if (battle.leadIndices.length < 2){
+      battle.leadIndices.push(index);
+    } else {
+      say('더블 배틀 선봉은 2마리까지 지정할 수 있어요');
+      return;
+    }
+    persistLocal();
+    renderMyTeam();
+    renderTeamAnalysis();
+  };
 }
 
 function updateMyPreview(slot, id){
@@ -338,7 +404,7 @@ function renderOpponentTeam(){
   const container = $('#opponentTeam');
   container.innerHTML = '';
 
-  for (let index = 0; index < 3; index += 1){
+  for (let index = 0; index < battle.teamSize; index += 1){
     const fragment = $('#opponentSlotTemplate').content.cloneNode(true);
     fragment.querySelector('.slot-number').textContent = index + 1;
     const record = battle.opponentTeam[index];
@@ -593,7 +659,7 @@ function renderBattleSaves(){
     <article class="battle-save-card${saved.id === activeBattleId ? ' active' : ''}" data-id="${escapeHtml(saved.id)}">
       <button class="battle-save-open" type="button">
         <strong>${escapeHtml(saved.title || '이름 없는 배틀')}</strong>
-        <small>${formatSavedAt(saved.updatedAt)}</small>
+        <small>${saved.battleFormat === 'double' ? '더블' : '싱글'} ${saved.teamSize || 3}:${saved.teamSize || 3} · ${formatSavedAt(saved.updatedAt)}</small>
       </button>
       <div class="battle-save-actions">
         <button class="battle-save-rename" type="button">이름 변경</button>
@@ -729,8 +795,14 @@ async function deleteSavedBattle(id){
 }
 
 function clearBattle(){
-  if (!confirm('현재 편집 중인 3:3 배틀 구성을 모두 비울까요? 저장 목록은 삭제되지 않아요.')) return;
+  if (!confirm(`현재 편집 중인 ${battle.battleFormat === 'double' ? '더블' : '싱글'} ${battle.teamSize}:${battle.teamSize} 구성을 모두 비울까요? 저장 목록은 삭제되지 않아요.`)) return;
+  const format = battle.battleFormat;
+  const teamSize = battle.teamSize;
   battle = emptyBattle();
+  battle.battleFormat = format;
+  battle.teamSize = teamSize;
+  battle.myTeam = Array(teamSize).fill('');
+  battle.opponentTeam = Array.from({length:teamSize}, () => emptyOpponent());
   activeBattleId = '';
   render();
   say('새 배틀을 시작했어요');
@@ -739,8 +811,94 @@ function clearBattle(){
 function updateCounts(){
   const myCount = battle.myTeam.filter(Boolean).length;
   const opponentCount = battle.opponentTeam.filter(item => item.name?.trim()).length;
-  $('#myCount').textContent = `${myCount} / 3`;
-  $('#opponentCount').textContent = `${opponentCount} / 3`;
+  $('#myCount').textContent = `${myCount} / ${battle.teamSize}`;
+  $('#opponentCount').textContent = `${opponentCount} / ${battle.teamSize}`;
+}
+
+function resizeBattleTeams(nextSize){
+  battle.teamSize = nextSize;
+  while (battle.myTeam.length < nextSize) battle.myTeam.push('');
+  battle.myTeam = battle.myTeam.slice(0, nextSize);
+  while (battle.opponentTeam.length < nextSize) battle.opponentTeam.push(emptyOpponent());
+  battle.opponentTeam = battle.opponentTeam.slice(0, nextSize);
+  battle.leadIndices = battle.leadIndices.filter(index => index < nextSize && battle.myTeam[index]);
+  persistLocal();
+  render();
+}
+
+function setBattleFormat(format){
+  battle.battleFormat = format === 'double' ? 'double' : 'single';
+  if (battle.battleFormat === 'single') battle.leadIndices = [];
+  else battle.leadIndices = battle.leadIndices.filter(index => battle.myTeam[index]).slice(0,2);
+  persistLocal();
+  render();
+}
+
+function selectedTeamRecords(){
+  return battle.myTeam.map(id => pokemon.find(record => record.id === id)).filter(Boolean);
+}
+
+function typePill(type){
+  return `<span class="type-pill" data-type="${escapeHtml(type)}">${escapeHtml(type)}</span>`;
+}
+
+function renderTeamAnalysis(){
+  const container = $('#teamAnalysis');
+  if (!container) return;
+  const team = selectedTeamRecords();
+  if (!team.length){
+    container.innerHTML = '<p class="analysis-empty">내 팀을 선택하면 타입 상성과 실제 기술 커버리지를 분석해요.</p>';
+    return;
+  }
+  const matchup = window.EeveeTypeMatchups;
+  if (!matchup){
+    container.innerHTML = '<p class="analysis-empty">타입 상성 모듈을 불러오지 못했어요.</p>';
+    return;
+  }
+
+  const weaknessRows = matchup.TYPES.map(type => {
+    const members = team.map(record => ({record, multiplier:matchup.attackMultiplier(type, record.types || [])}))
+      .filter(item => item.multiplier > 1);
+    return {type, members, score:members.reduce((sum,item) => sum + item.multiplier,0)};
+  }).filter(row => row.members.length).sort((a,b) => b.members.length-a.members.length || b.score-a.score || a.type.localeCompare(b.type,'ko'));
+
+  const risky = weaknessRows.filter(row => row.members.length >= Math.max(2, Math.ceil(team.length / 2)));
+  const defenseHtml = weaknessRows.length ? weaknessRows.map(row => `
+    <div class="team-analysis-row${risky.includes(row) ? ' warning' : ''}">
+      <div class="team-analysis-type">${typePill(row.type)}<strong>${row.members.length}마리 약점</strong></div>
+      <div class="team-analysis-members">${row.members.map(({record,multiplier}) => `<span>${escapeHtml(record.nickname || record.species)} ×${multiplier}</span>`).join('')}</div>
+    </div>`).join('') : '<p class="analysis-empty">겹치는 약점이 없어요.</p>';
+
+  const moveTypes = [...new Set(team.flatMap(record => (record.currentMoves || []).map(name => moves.find(move => move.name === name)?.type).filter(Boolean)))];
+  const coverage = matchup.TYPES.map(defenseType => {
+    const best = moveTypes.length ? Math.max(...moveTypes.map(attackType => matchup.attackMultiplier(attackType,[defenseType]))) : 1;
+    return {defenseType,best};
+  });
+  const strong = coverage.filter(row => row.best > 1).map(row => row.defenseType);
+  const neutral = coverage.filter(row => row.best === 1).map(row => row.defenseType);
+  const poor = coverage.filter(row => row.best < 1).map(row => row.defenseType);
+  const coverageHtml = moveTypes.length ? `
+    <div class="coverage-score"><strong>${strong.length} / ${matchup.TYPES.length}</strong><span>타입을 효과 굉장함으로 공격 가능</span></div>
+    <div class="coverage-group"><span>강점</span><div>${strong.map(typePill).join('') || '<small>없음</small>'}</div></div>
+    <div class="coverage-group"><span>보통</span><div>${neutral.map(typePill).join('') || '<small>없음</small>'}</div></div>
+    ${poor.length ? `<div class="coverage-group weak"><span>커버 불리</span><div>${poor.map(typePill).join('')}</div></div>` : ''}
+    <p class="analysis-caption">현재 등록된 기술의 타입만 사용해 단일 타입 상대 기준으로 계산해요.</p>` : '<p class="analysis-empty">선택한 포켓몬에 현재 기술이 등록되어 있지 않아요.</p>';
+
+  const leadHtml = battle.battleFormat === 'double' ? `
+    <div class="lead-analysis">
+      <strong>선봉</strong>
+      <span>${battle.leadIndices.length ? battle.leadIndices.map(index => {
+        const record = pokemon.find(item => item.id === battle.myTeam[index]);
+        return record ? escapeHtml(record.nickname || record.species) : '';
+      }).filter(Boolean).join(' + ') : '아직 지정하지 않았어요'}</span>
+      <small>${battle.leadIndices.length}/2</small>
+    </div>` : '';
+
+  container.innerHTML = `${leadHtml}
+    <div class="team-analysis-grid">
+      <section class="team-analysis-card"><div class="team-analysis-head"><span>DEFENSE</span><h3>팀 방어 약점</h3></div>${defenseHtml}</section>
+      <section class="team-analysis-card"><div class="team-analysis-head"><span>OFFENSE</span><h3>실제 기술 공격 커버리지</h3></div>${coverageHtml}</section>
+    </div>`;
 }
 
 function escapeHtml(value){
@@ -749,6 +907,13 @@ function escapeHtml(value){
   }[char]));
 }
 
+
+document.querySelectorAll('[data-battle-format]').forEach(button => {
+  button.addEventListener('click', () => setBattleFormat(button.dataset.battleFormat));
+});
+document.querySelectorAll('[data-team-size]').forEach(button => {
+  button.addEventListener('click', () => resizeBattleTeams(Number(button.dataset.teamSize)));
+});
 $('#saveBattle').addEventListener('click', saveBattle);
 $('#clearBattle').addEventListener('click', clearBattle);
 $('#refreshBattleSaves')?.addEventListener('click', () => refreshBattleSaves());

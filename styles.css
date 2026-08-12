@@ -481,3 +481,46 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .matchup-attack-resist .matchup-label{color:#9a6b16}
 .matchup-subtitle{margin:3px 1px -2px;font-size:.65rem;font-weight:900;color:#6e7f78}
 .matchup-tera-offense{display:grid;gap:7px;padding-top:2px;border-top:1px dashed #dfe8e3}
+
+
+/* Battle Box v2 */
+.battle-mode-label{display:inline-flex;align-items:center;margin-left:.5rem;padding:.2rem .55rem;border:1px solid var(--line,#d9dee7);border-radius:999px;font-size:.78rem;font-weight:700;vertical-align:middle;background:var(--panel,#fff);color:var(--muted,#667085)}
+.battle-setup-panel,.battle-analysis-panel{margin:18px 0;padding:20px;border:1px solid var(--line,#d9dee7);border-radius:18px;background:var(--panel,#fff)}
+.battle-setup-head,.battle-analysis-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}
+.battle-setup-head h2,.battle-analysis-head h2{margin:.1rem 0 0}
+.battle-setup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.battle-choice-group{display:grid;gap:8px}
+.segmented-control{display:flex;gap:6px;flex-wrap:wrap}
+.segmented-control button{flex:1;min-width:76px;border:1px solid var(--line,#d9dee7);background:var(--panel,#fff);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+.segmented-control button.active{background:#17324d;color:#fff;border-color:#17324d}
+.lead-hint{margin:0;max-width:420px;font-size:.9rem;color:var(--muted,#667085)}
+.lead-control{width:100%;margin:8px 0 10px;padding:8px 10px;border:1px dashed #aab5c2;border-radius:10px;background:transparent;font-weight:700;cursor:pointer}
+.lead-control.active{border-style:solid;background:#fff4cc;border-color:#d6a900;color:#6b5200}
+.lead-control:disabled{opacity:.45;cursor:not-allowed}
+.team-analysis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.team-analysis-card{border:1px solid var(--line,#d9dee7);border-radius:15px;padding:16px;background:rgba(255,255,255,.55)}
+.team-analysis-head{margin-bottom:12px}
+.team-analysis-head span{font-size:.72rem;letter-spacing:.12em;font-weight:800;color:var(--muted,#667085)}
+.team-analysis-head h3{margin:3px 0 0;font-size:1rem}
+.team-analysis-row{display:grid;gap:7px;padding:10px 0;border-top:1px solid var(--line,#e7eaf0)}
+.team-analysis-row:first-of-type{border-top:0}
+.team-analysis-row.warning{margin:0 -8px;padding:10px 8px;border-radius:10px;background:rgba(190,48,48,.07)}
+.team-analysis-type{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.team-analysis-type strong{font-size:.86rem}
+.team-analysis-members{display:flex;gap:6px;flex-wrap:wrap}
+.team-analysis-members span{font-size:.78rem;padding:3px 7px;border-radius:999px;background:rgba(120,130,145,.1)}
+.coverage-score{display:flex;align-items:baseline;gap:9px;margin-bottom:12px;padding:12px;border-radius:12px;background:rgba(23,50,77,.06)}
+.coverage-score strong{font-size:1.35rem}
+.coverage-score span{font-size:.82rem;color:var(--muted,#667085)}
+.coverage-group{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start;margin:10px 0}
+.coverage-group>span{font-size:.8rem;font-weight:800;color:var(--muted,#667085);padding-top:4px}
+.coverage-group>div{display:flex;gap:5px;flex-wrap:wrap}
+.coverage-group.weak>span{color:#9c3131}
+.analysis-caption,.analysis-empty{font-size:.82rem;color:var(--muted,#667085);margin:.75rem 0 0}
+.lead-analysis{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;border-radius:13px;background:#fff7d8;border:1px solid #ead57d}
+.lead-analysis strong{font-size:.82rem;text-transform:uppercase;letter-spacing:.08em}
+.lead-analysis span{font-weight:800}
+.lead-analysis small{margin-left:auto;color:#7b6921}
+.battle-save-open small{line-height:1.45}
+@media (max-width:900px){.battle-setup-grid,.team-analysis-grid{grid-template-columns:1fr}.battle-setup-head,.battle-analysis-head{display:block}.lead-hint{margin-top:8px}}
+@media (max-width:600px){.battle-setup-panel,.battle-analysis-panel{padding:15px;border-radius:14px}.segmented-control button{padding:9px 8px}.battle-mode-label{display:flex;width:max-content;margin:.35rem 0 0}.coverage-group{grid-template-columns:1fr}.lead-analysis small{margin-left:0;width:100%}}

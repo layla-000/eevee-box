@@ -154,11 +154,12 @@
 
   async function loadMoves(){
     try {
-      const response = await fetch("moves.json", {cache:"no-store"});
-      if (!response.ok) throw new Error(`moves.json ${response.status}`);
-      const moves = await response.json();
+      if (!window.EeveeBackend?.listMoves) {
+        throw new Error("Supabase 기술 마스터 API가 아직 준비되지 않았어요.");
+      }
+      const moves = await window.EeveeBackend.listMoves();
       moveTypeByName = new Map(
-        moves
+        (moves || [])
           .filter(move => move?.name && TYPE_COLORS[move?.type])
           .map(move => [String(move.name).trim(), move.type])
       );

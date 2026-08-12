@@ -125,19 +125,18 @@
 
   async function loadMoves(){
     try {
-      const response = await fetch("moves.json", {cache:"no-store"});
-      if (!response.ok) throw new Error(`moves.json ${response.status}`);
-
-      const moves = await response.json();
+      if (!window.EeveeBackend?.listMoves) {
+        throw new Error("Supabase 기술 마스터 API가 아직 준비되지 않았어요.");
+      }
+      const moves = await window.EeveeBackend.listMoves();
       moveCategoryByName = new Map(
-        moves
+        (moves || [])
           .filter(move => move?.name && CATEGORY_COLORS[move?.category])
           .map(move => [normalize(move.name), move.category])
       );
     } catch (error){
       console.warn("기술 분류 색상 데이터를 불러오지 못했어요.", error);
     }
-
     schedulePaint();
   }
 

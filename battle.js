@@ -389,12 +389,12 @@ function renderOpponentStatsPanel(container, record, selectedPokemon){
       <div class="opponent-stat-row-wrap" data-stat="${key}">
         <div class="opponent-stat-row">
           <strong>${label}</strong>
+          <div class="opponent-stat-bar" aria-hidden="true">
+            <span style="width:${Math.min(100, Math.max(4, calculateBattleStat(key, stats[key].base, stats[key].ev, record.level) / 3.2))}%"></span>
+          </div>
           <span class="opp-base-stat">${stats[key].base}</span>
           <input class="opp-stat-ev" type="number" min="0" max="252" step="4" value="${stats[key].ev}" aria-label="${label} 노력치" />
           <span class="opp-final-stat">${calculateBattleStat(key, stats[key].base, stats[key].ev, record.level)}</span>
-        </div>
-        <div class="opponent-stat-bar" aria-hidden="true">
-          <span style="width:${Math.min(100, Math.max(4, calculateBattleStat(key, stats[key].base, stats[key].ev, record.level) / 3.2))}%"></span>
         </div>
       </div>
     `).join('')}

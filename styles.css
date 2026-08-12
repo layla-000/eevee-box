@@ -1184,3 +1184,37 @@ details summary{color:#5A82A4}
     margin-left:84px;
   }
 }
+
+
+/* Battle Box v3.2.9 — stat bar inline with base / EV / final */
+.opponent-stat-row-wrap{
+  display:block;
+}
+.opponent-stat-row{
+  display:grid !important;
+  grid-template-columns:108px minmax(120px,1fr) 82px 108px 82px !important;
+  align-items:center !important;
+  column-gap:10px !important;
+}
+.opponent-stat-row .opponent-stat-bar{
+  width:100% !important;
+  height:7px !important;
+  margin:0 !important;
+  align-self:center !important;
+  border-radius:999px;
+  background:#E7EEF2;
+  overflow:hidden;
+}
+.opponent-stat-row .opponent-stat-bar > span{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#95BDD7,#78A4CB);
+  transition:width .18s ease;
+}
+@media(max-width:700px){
+  .opponent-stat-row{
+    grid-template-columns:72px minmax(70px,1fr) 58px 72px 58px !important;
+    column-gap:6px !important;
+  }
+}

@@ -128,19 +128,21 @@
 
   async function listMoves(){
     await user();
-    const {data,error} = await client
-      .from('ebox_moves_master')
-      .select('id,name,type,category,description,learn_method,learn_level,power,accuracy,pp,priority,data')
-      .order('name');
-    throwIf(error);
-    return (data || []).map(row => ({
+    // Read the full row for compatibility with earlier Eevee Box move-master migrations.
+    // Some older rows stored the move explanation as `effect` / data.effect rather than `description`.
+    const data = await selectAll(
+      'ebox_moves_master',
+      '*',
+      [{column:'name'}]
+    );
+    return data.map(row => ({
       id: row.id,
       name: row.name,
       type: row.type || row.data?.type || '',
       category: row.category || row.data?.category || '',
-      description: row.description || row.data?.description || '',
-      learnMethod: row.learn_method || row.data?.learn_method || '',
-      learnLevel: row.learn_level || row.data?.learn_level || '',
+      description: row.description || row.effect || row.data?.description || row.data?.effect || '',
+      learnMethod: row.learn_method || row.method || row.data?.learn_method || row.data?.method || '',
+      learnLevel: row.learn_level || row.data?.learn_level || row.data?.learnLevel || '',
       power: row.power || row.data?.power || '',
       accuracy: row.accuracy || row.data?.accuracy || '',
       pp: row.pp || row.data?.pp || '',

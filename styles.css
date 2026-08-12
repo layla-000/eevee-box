@@ -1101,3 +1101,43 @@ details summary{color:#5A82A4}
     gap:8px;
   }
 }
+
+
+/* Battle Box v3.2.6 — reference text sizing + inline level alignment */
+.my-reference-line span,
+.reference-detail,
+.move-reference-detail{
+  font-size:.88rem;
+  line-height:1.45;
+}
+
+.opponent-level-inline{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  align-self:stretch;
+  margin:0;
+}
+.opponent-level-inline > span{
+  display:inline-flex;
+  align-items:center;
+  height:100%;
+  margin:0;
+  font-size:.82rem;
+  font-weight:800;
+  color:var(--muted,#637282);
+  white-space:nowrap;
+}
+.opponent-level-inline .opp-level{
+  height:100%;
+  min-height:44px;
+  margin:0;
+}
+
+@media(max-width:700px){
+  .my-reference-line span,
+  .reference-detail,
+  .move-reference-detail{
+    font-size:.84rem;
+  }
+}

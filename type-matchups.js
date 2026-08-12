@@ -52,7 +52,7 @@
     return `<div class="matchup-row matchup-${tone}"><span class="matchup-label">${label}</span><div class="matchup-pills">${pills(list)}</div></div>`;
   }
 
-  function panel(types, title){
+  function defensePanel(types, title){
     const cleanTypes = normalizeTypes(types);
     if (!cleanTypes.length) return '';
     const g = defense(cleanTypes);
@@ -68,17 +68,81 @@
     </div>`;
   }
 
-  function summary(types, teraType=''){
+  function offenseForType(attackType){
+    const groups = {2:[], 1:[], 0.5:[], 0:[]};
+    TYPES.forEach(defenseType => {
+      const multiplier = attackMultiplier(attackType, [defenseType]);
+      (groups[multiplier] ||= []).push(defenseType);
+    });
+    return groups;
+  }
+
+  function offensePanel(attackType){
+    if (!TYPES.includes(attackType)) return '';
+    const g = offenseForType(attackType);
+    return `<div class="matchup-panel matchup-offense-panel">
+      <div class="matchup-panel-head"><strong>${esc(attackType)} 공격</strong><span>단일 타입 상대 기준</span></div>
+      ${row('×2 강점', g[2], 'attack-strong')}
+      ${row('×0 무효', g[0], 'immune')}
+      ${row('×½ 반감', g[0.5], 'attack-resist')}
+      ${g[1]?.length ? `<details class="matchup-neutral"><summary>×1 보통 <span>${g[1].length}개 타입</span></summary><div class="matchup-pills">${pills(g[1])}</div></details>` : ''}
+    </div>`;
+  }
+
+  function offenseCoverage(types){
+    const cleanTypes = normalizeTypes(types);
+    const groups = {2:[], 1:[], 0.5:[], 0:[]};
+    if (!cleanTypes.length) return groups;
+    TYPES.forEach(defenseType => {
+      const best = Math.max(...cleanTypes.map(attackType => attackMultiplier(attackType, [defenseType])));
+      (groups[best] ||= []).push(defenseType);
+    });
+    return groups;
+  }
+
+  function coveragePanel(types, title='타입 공격 커버리지'){
+    const cleanTypes = normalizeTypes(types);
+    if (!cleanTypes.length) return '';
+    const g = offenseCoverage(cleanTypes);
+    return `<div class="matchup-panel matchup-coverage-panel">
+      <div class="matchup-panel-head"><strong>${esc(title)}</strong><span>${esc(cleanTypes.join(' / '))} 중 유리한 공격</span></div>
+      ${row('×2 강점', g[2], 'attack-strong')}
+      ${row('×0.5 이하', g[0.5], 'attack-resist')}
+      ${row('×0 무효', g[0], 'immune')}
+      ${g[1]?.length ? `<details class="matchup-neutral"><summary>×1 보통 <span>${g[1].length}개 타입</span></summary><div class="matchup-pills">${pills(g[1])}</div></details>` : ''}
+    </div>`;
+  }
+
+  function defenseSummary(types, teraType=''){
     const cleanTypes = normalizeTypes(types);
     if (!cleanTypes.length) return '';
     const cleanTera = TYPES.includes(String(teraType || '').trim()) ? String(teraType).trim() : '';
-    const teraPanel = cleanTera ? panel([cleanTera], '테라스탈 시') : '';
-    return `<section class="matchup-summary">
+    const teraPanel = cleanTera ? defensePanel([cleanTera], '테라스탈 시') : '';
+    return `<section class="matchup-summary matchup-defense-summary">
       <div class="matchup-title-row"><div><span class="matchup-kicker">DEFENSE</span><strong>방어 타입 상성</strong></div><small>공격받을 때 기준</small></div>
-      ${panel(cleanTypes, '기본 타입')}
+      ${defensePanel(cleanTypes, '기본 타입')}
       ${teraPanel}
     </section>`;
   }
 
-  window.EeveeTypeMatchups = { TYPES, attackMultiplier, defense, summary };
+  function offenseSummary(types, teraType=''){
+    const cleanTypes = normalizeTypes(types);
+    if (!cleanTypes.length) return '';
+    const cleanTera = TYPES.includes(String(teraType || '').trim()) ? String(teraType).trim() : '';
+    const basePanels = cleanTypes.map(offensePanel).join('');
+    const combined = cleanTypes.length > 1 ? coveragePanel(cleanTypes) : '';
+    const tera = cleanTera ? `<div class="matchup-tera-offense"><div class="matchup-subtitle">테라스탈 공격 타입</div>${offensePanel(cleanTera)}</div>` : '';
+    return `<section class="matchup-summary matchup-offense-summary">
+      <div class="matchup-title-row"><div><span class="matchup-kicker">OFFENSE</span><strong>공격 타입 상성</strong></div><small>STAB 타입 기준</small></div>
+      ${basePanels}
+      ${combined}
+      ${tera}
+    </section>`;
+  }
+
+  function summary(types, teraType=''){
+    return `${defenseSummary(types, teraType)}${offenseSummary(types, teraType)}`;
+  }
+
+  window.EeveeTypeMatchups = { TYPES, attackMultiplier, defense, offenseForType, offenseCoverage, defenseSummary, offenseSummary, summary };
 })();

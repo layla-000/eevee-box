@@ -470,3 +470,14 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
   .matchup-row{grid-template-columns:54px minmax(0,1fr);gap:5px}
   .matchup-type{min-height:23px;padding:4px 7px;font-size:.62rem}
 }
+
+
+/* Offensive type matchup */
+.matchup-offense-summary{background:linear-gradient(180deg,#fbfdfc 0%,#f7fbf9 100%)}
+.matchup-offense-summary .matchup-kicker{color:#738f83}
+.matchup-offense-panel{border-color:#e2ece7}
+.matchup-coverage-panel{background:#f8fcfa;border-color:#dbe9e2}
+.matchup-attack-strong .matchup-label{color:#16734f}
+.matchup-attack-resist .matchup-label{color:#9a6b16}
+.matchup-subtitle{margin:3px 1px -2px;font-size:.65rem;font-weight:900;color:#6e7f78}
+.matchup-tera-offense{display:grid;gap:7px;padding-top:2px;border-top:1px dashed #dfe8e3}

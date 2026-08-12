@@ -9,6 +9,26 @@
     return data.user;
   }
 
+
+  async function selectAll(table, columns, orderColumns = []){
+    await user();
+    const pageSize = 1000;
+    let from = 0;
+    const rows = [];
+    while (true){
+      let query = client.from(table).select(columns);
+      for (const order of orderColumns){
+        query = query.order(order.column, order.options || {});
+      }
+      const {data,error} = await query.range(from, from + pageSize - 1);
+      throwIf(error);
+      rows.push(...(data || []));
+      if (!data || data.length < pageSize) break;
+      from += pageSize;
+    }
+    return rows;
+  }
+
   function rowToRecord(row){
     return {
       id: row.id,
@@ -88,18 +108,20 @@
 
   async function listSpecies(){
     await user();
-    const {data,error} = await client
-      .from('ebox_species_master')
-      .select('id,dex_no,name,type1,type2,classification,data')
-      .order('dex_no')
-      .order('name');
-    throwIf(error);
-    return (data || []).map(row => ({
+    const data = await selectAll(
+      'ebox_species_master',
+      'id,dex_no,name,type1,type2,classification,base_stats,abilities,learnable_moves,data',
+      [{column:'dex_no'},{column:'name'}]
+    );
+    return data.map(row => ({
       id: row.id,
       dexNo: row.dex_no || row.data?.dex_no || '',
       name: row.name,
       types: [row.type1 || row.data?.type1, row.type2 || row.data?.type2].filter(Boolean),
-      classification: row.classification || row.data?.classification || ''
+      classification: row.classification || row.data?.classification || '',
+      baseStats: row.base_stats || {},
+      abilities: row.abilities || [],
+      learnableMoves: row.learnable_moves || []
     }));
   }
 

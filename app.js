@@ -1,17 +1,11 @@
-const CONFIG = window.EEVEE_BOX_CONFIG || {};
-const KEY = 'EEVEE_BOX_DATA_V1';
 let data = [];
 let editing = null;
 let abilities = [];
 let items = [];
 let moveDex = [];
 let moveMap = new Map();
-let baseStatsByName = {};
-let pokemonCatalog = [];
-let pokemonCatalogByName = new Map();
 let speciesMaster = [];
 let speciesMasterByName = new Map();
-let seedPokemonBySpecies = new Map();
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 const toast = $('#toast');
@@ -67,115 +61,54 @@ async function api(action, payload = {}){
 
 function setSync(ok){
   $('#syncDot').classList.toggle('online', ok);
-  $('#syncText').textContent = ok ? '웹 동기화' : '로컬 모드';
-}
-
-function persist(){
-  localStorage.setItem(KEY, JSON.stringify(data));
-}
-
-function mergeRecords(localRecords, remoteRecords){
-  const merged = new Map();
-  [...remoteRecords, ...localRecords].forEach(record => {
-    const old = merged.get(record.id);
-    const oldTime = Date.parse(old?.updatedAt || 0);
-    const newTime = Date.parse(record.updatedAt || 0);
-    if (!old || newTime >= oldTime) merged.set(record.id, record);
-  });
-  return [...merged.values()];
+  $('#syncText').textContent = ok ? 'Supabase 연결' : 'Supabase 연결 끊김';
 }
 
 async function load(){
-  const [seed, abilityData, itemData, allMoves, baseStatData, catalogData] = await Promise.all([
-    fetch('pokemon-data.json').then(r => r.json()),
-    fetch('abilities.json').then(r => r.json()),
-    fetch('items.json').then(r => r.json()),
-    fetch('moves.json').then(r => r.json()),
-    fetch('pokemon-base-stats-by-name.json').then(r => r.json()),
-    fetch('pokemon-catalog.json').then(r => r.json())
-  ]);
-  seedPokemonBySpecies = new Map((seed || []).filter(record => record?.species).map(record => [record.species, record]));
-  abilities = abilityData;
-  items = itemData;
-  moveDex = allMoves;
-  moveMap = new Map(moveDex.map(move => [move.name, move]));
-  baseStatsByName = baseStatData || {};
-  pokemonCatalog = Array.isArray(catalogData) ? catalogData : [];
-  pokemonCatalogByName = new Map(pokemonCatalog.map(record => [record.name, record]));
-  let masterNames = [];
-  if (CONFIG.apiEndpoint){
-    try {
-      const speciesResult = await api('list_species');
-      speciesMaster = speciesResult.species || [];
-      speciesMasterByName = new Map(speciesMaster.map(record => [record.name, record]));
-      masterNames = speciesMaster.map(record => record.name);
-
-      try {
-        const movesResult = await api('list_moves');
-        if (movesResult.moves?.length){
-          moveDex = movesResult.moves;
-          moveMap = new Map(moveDex.map(move => [move.name, move]));
-        }
-      } catch (moveError){
-        console.warn('Move master load failed; falling back to bundled moves.json.', moveError);
-      }
-
-      try {
-        const itemsResult = await api('list_items');
-        if (itemsResult.items?.length) items = itemsResult.items;
-      } catch (itemError){
-        console.warn('Item master load failed; falling back to bundled items.json.', itemError);
-      }
-
-      try {
-        const abilitiesResult = await api('list_abilities');
-        if (abilitiesResult.abilities?.length) abilities = abilitiesResult.abilities;
-      } catch (abilityError){
-        console.warn('Ability master load failed; falling back to bundled abilities.json.', abilityError);
-      }
-    } catch (error){
-      console.warn('Species master load failed; falling back to bundled JSON.', error);
-    }
+  setSync(false);
+  $('#syncText').textContent = 'Supabase 불러오는 중';
+  try {
+    const [speciesResult, movesResult, itemsResult, abilitiesResult, pokemonResult] = await Promise.all([
+      api('list_species'), api('list_moves'), api('list_items'), api('list_abilities'), api('get_all')
+    ]);
+    speciesMaster = speciesResult.species || [];
+    speciesMasterByName = new Map(speciesMaster.map(record => [record.name, record]));
+    moveDex = (movesResult.moves || []).slice().sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+    moveMap = new Map(moveDex.map(move => [move.name, move]));
+    items = (itemsResult.items || []).slice().sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+    abilities = (abilitiesResult.abilities || []).slice().sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+    data = pokemonResult.records || [];
+    const speciesNames = [...new Set(speciesMaster.map(record => record.name).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ko'));
+    $('#speciesList').innerHTML = speciesNames.map(name => `<option value="${esc(name)}"></option>`).join('');
+    setSync(true);
+    render();
+  } catch (error){
+    console.error('Supabase load failed', error);
+    setSync(false);
+    $('#syncText').textContent = 'Supabase 연결 실패';
+    say('Supabase 데이터를 불러오지 못했어요');
+    throw error;
   }
-  const speciesNames = [...new Set([
-    ...masterNames,
-    ...Object.keys(baseStatsByName),
-    ...pokemonCatalog.map(record => record.name)
-  ])].sort((a, b) => a.localeCompare(b, 'ko'));
-  $('#speciesList').innerHTML = speciesNames.map(name => `<option value="${esc(name)}"></option>`).join('');
-
-  const local = JSON.parse(localStorage.getItem(KEY) || 'null');
-  data = local || seed;
-
-  if (CONFIG.apiEndpoint){
-    try {
-      const result = await api('sync_all', {records:data});
-      data = result.records?.length ? result.records : data;
-      persist();
-      setSync(true);
-    } catch (error){
-      console.warn(error);
-      setSync(false);
-    }
-  }
-  render();
 }
 
 async function saveRecord(record){
   record.updatedAt = new Date().toISOString();
-  persist();
-  render();
-  if (CONFIG.apiEndpoint){
-    try {
-      const result = await api('save', {record});
-      if (result.record) Object.assign(record, result.record);
-      persist();
-      setSync(true);
-    } catch (error){
-      console.warn(error);
-      setSync(false);
-      say('로컬에는 저장됐어요');
+  try {
+    const result = await api('save', {record});
+    if (result.record) {
+      const index = data.findIndex(item => item.id === record.id);
+      if (index >= 0) data[index] = result.record;
+      else data.push(result.record);
     }
+    setSync(true);
+    render();
+    return result.record || record;
+  } catch (error){
+    console.error('Supabase save failed', error);
+    setSync(false);
+    $('#syncText').textContent = 'Supabase 저장 실패';
+    say('저장에 실패했어요');
+    throw error;
   }
 }
 
@@ -254,9 +187,9 @@ function openEditor(id){
     types:[], ability:'', abilityEffect:'', teraType:'', nature:'', heldItem:'',
     notes:'', currentMoves:[], moves:[], stats: normalizeStats({})
   };
-  const seedRecord = seedPokemonBySpecies.get(editing.species);
-  if ((!editing.moves || !editing.moves.length) && seedRecord?.moves?.length){
-    editing.moves = seedRecord.moves.map(move => ({...move}));
+  const speciesRecord = speciesMasterByName.get(editing.species);
+  if ((!editing.moves || !editing.moves.length) && speciesRecord?.learnableMoves?.length){
+    editing.moves = speciesRecord.learnableMoves.map(move => ({...move}));
   }
   $('#editorTitle').textContent = id ? '포켓몬 수정' : '포켓몬 추가';
   $('#editId').value = editing.id;
@@ -395,7 +328,11 @@ function moveDetail(move){
 
 function renderMoveLibrary(){
   const query = $('#moveSearch').value.trim().toLowerCase();
-  const baseMoves = (editing.moves && editing.moves.length) ? editing.moves : moveDex;
+  const baseMoves = editing.moves || [];
+  if (!baseMoves.length){
+    $('#moveLibrary').innerHTML = '<div class="move-row">이 포켓몬의 학습 가능 기술 데이터가 아직 없어요.</div>';
+    return;
+  }
   const records = baseMoves
     .map(move => mergedMove(move))
     .sort((a, b) => String(a.name).localeCompare(String(b.name), 'ko'))
@@ -404,8 +341,8 @@ function renderMoveLibrary(){
 }
 
 function fillSpeciesAbilitySelect(species, selectedValue = ''){
-  const catalogRecord = pokemonCatalogByName.get(species);
-  const availableAbilities = catalogRecord?.abilities || [];
+  const masterRecord = speciesMasterByName.get(species);
+  const availableAbilities = masterRecord?.abilities || [];
   fillSelect(
     '#editAbility',
     availableAbilities.length ? availableAbilities : abilities.map(record => record.name),
@@ -416,37 +353,29 @@ function fillSpeciesAbilitySelect(species, selectedValue = ''){
 
 function applySpeciesData({notify = true} = {}){
   const species = $('#editSpecies').value.trim();
-  const baseRecord = baseStatsByName[species];
-  const catalogRecord = pokemonCatalogByName.get(species);
   const masterRecord = speciesMasterByName.get(species);
-  if (!baseRecord && !catalogRecord && !masterRecord) return false;
+  if (!masterRecord) return false;
 
-  if (baseRecord?.stats){
+  if (masterRecord.baseStats && Object.keys(masterRecord.baseStats).length){
     const current = readStatsEditor();
     STAT_DEFS.forEach(([key]) => {
-      current[key].base = clampNumber(baseRecord.stats[key], 0, 999);
+      current[key].base = clampNumber(masterRecord.baseStats[key] ?? current[key].base, 0, 999);
     });
     editing.stats = current;
     renderStatsEditor();
   }
 
-  if (masterRecord || catalogRecord){
-    const autoTypes = (masterRecord?.types?.length ? masterRecord.types : catalogRecord?.types) || [];
-    editing.types = [...autoTypes];
-    $('#editTypes').value = autoTypes.join(', ');
-    const currentAbility = $('#editAbility').value.trim();
-    const availableAbilities = catalogRecord?.abilities || [];
-    const nextAbility = availableAbilities.includes(currentAbility) ? currentAbility : '';
-    fillSpeciesAbilitySelect(species, nextAbility);
-    $('#editAbilityEffect').value = abilityDescription(nextAbility);
-  } else {
-    fillSpeciesAbilitySelect(species, $('#editAbility').value.trim());
-  }
+  const autoTypes = masterRecord.types || [];
+  editing.types = [...autoTypes];
+  $('#editTypes').value = autoTypes.join(', ');
 
-  const seedRecord = seedPokemonBySpecies.get(species);
-  editing.moves = seedRecord?.moves?.length ? seedRecord.moves.map(move => ({...move})) : [];
-  // Do not discard currently selected moves when species changes.
-  // The four current-move dropdowns intentionally allow every move in the master list.
+  const currentAbility = $('#editAbility').value.trim();
+  const availableAbilities = masterRecord.abilities || [];
+  const nextAbility = !availableAbilities.length || availableAbilities.includes(currentAbility) ? currentAbility : '';
+  fillSpeciesAbilitySelect(species, nextAbility);
+  $('#editAbilityEffect').value = abilityDescription(nextAbility);
+
+  editing.moves = (masterRecord.learnableMoves || []).map(move => ({...move}));
   editing.currentMoves = (editing.currentMoves || []).filter(Boolean);
   renderMoveInputs();
   renderMoveLibrary();
@@ -467,7 +396,7 @@ $('#editItem').addEventListener('change', () => {
   $('#editItemEffect').value = itemDescription($('#editItem').value);
 });
 
-$('#editorForm').onsubmit = event => {
+$('#editorForm').onsubmit = async event => {
   event.preventDefault();
   const held = $('#editItem').value.trim();
   const stats = readStatsEditor();
@@ -490,23 +419,27 @@ $('#editorForm').onsubmit = event => {
     stats,
     currentMoves: [...document.querySelectorAll('.move-select')].map(x=>x.value).filter(Boolean)
   });
-  if (!data.some(x => x.id === editing.id)) data.push(editing);
-  saveRecord(editing);
-  $('#editor').close();
-  say('저장했어요');
+  try {
+    await saveRecord(editing);
+    $('#editor').close();
+    say('Supabase에 저장했어요');
+  } catch (_) {}
 };
 
 $('#deleteButton').onclick = async () => {
   if (!confirm('이 포켓몬을 삭제할까요?')) return;
-  data = data.filter(x => x.id !== editing.id);
-  persist();
-  render();
-  $('#editor').close();
-  if (CONFIG.apiEndpoint){
-    try { await api('remove', {id:editing.id}); setSync(true); }
-    catch (error){ console.warn(error); setSync(false); }
+  try {
+    await api('remove', {id:editing.id});
+    data = data.filter(x => x.id !== editing.id);
+    render();
+    $('#editor').close();
+    setSync(true);
+    say('Supabase에서 삭제했어요');
+  } catch (error){
+    console.error(error);
+    setSync(false);
+    say('삭제에 실패했어요');
   }
-  say('삭제했어요');
 };
 
 $('#closeEditor').onclick = () => $('#editor').close();
@@ -515,18 +448,16 @@ $('#searchInput').oninput = render;
 $('#typeFilter').onchange = render;
 $('#moveSearch').oninput = renderMoveLibrary;
 $('#syncButton').onclick = async () => {
-  if (!CONFIG.apiEndpoint) return say('config.js에 Apps Script 주소를 넣어주세요');
   try {
-    const result = await api('sync_all', {records:data});
-    data = result.records || data;
-    persist();
+    const result = await api('get_all');
+    data = result.records || [];
     render();
     setSync(true);
-    say('웹과 동기화했어요');
+    say('Supabase에서 새로 불러왔어요');
   } catch (error){
-    console.warn(error);
+    console.error(error);
     setSync(false);
-    say('동기화에 실패했어요');
+    say('새로고침에 실패했어요');
   }
 };
 

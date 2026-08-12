@@ -58,30 +58,8 @@ function say(text){
 }
 
 async function api(action, payload = {}){
-  if (!CONFIG.apiEndpoint) throw new Error('API endpoint missing');
-
-  const response = await fetch(CONFIG.apiEndpoint, {
-    method: 'POST',
-    headers: {'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({action, ...payload}),
-    redirect: 'follow'
-  });
-
-  const text = await response.text();
-
-  if (!response.ok){
-    throw new Error(`API HTTP ${response.status}: ${text.slice(0, 160)}`);
-  }
-
-  let result;
-  try {
-    result = JSON.parse(text);
-  } catch (_) {
-    throw new Error(`API가 JSON 대신 다른 응답을 반환했어요: ${text.slice(0, 160)}`);
-  }
-
-  if (!result.ok) throw new Error(result.error || 'API error');
-  return result;
+  if (!window.EeveeBackend) throw new Error('Supabase backend missing');
+  return window.EeveeBackend.api(action, payload);
 }
 
 function setSync(ok){
@@ -181,6 +159,7 @@ function card(p){
     <div class="badges">${(p.types||[]).map(x=>`<span class="badge">${esc(x)}</span>`).join('')}${p.teraType?`<span class="badge">테라 ${esc(p.teraType)}</span>`:''}</div>
     <div class="level-row"><span>현재 레벨</span><strong>Lv.${p.level||1}</strong><div class="level-controls"><button data-level="${p.id}" data-delta="-1">−</button><button data-level="${p.id}" data-delta="1">+</button></div></div>
     ${statsPanel(p)}
+    ${window.EeveeTypeMatchups?.summary(p.types || []) || ''}
     <ul class="moves">${[0,1,2,3].map(i=>`<li>${esc((p.currentMoves||[])[i]||'—')}</li>`).join('')}</ul>
     <div class="card-foot"><span>${esc(p.ability||'특성 미입력')}</span><span>${p.heldItem?esc(p.heldItem):'도구 없음'}</span></div>
   </article>`;
@@ -492,6 +471,7 @@ function esc(value){
 
 (async () => {
   const select = $('#typeFilter');
+  await window.EeveeAuth.ready;
   await load();
   types().forEach(type => select.insertAdjacentHTML('beforeend', `<option>${esc(type)}</option>`));
 })();

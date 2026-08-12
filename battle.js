@@ -83,26 +83,8 @@ function setSync(ok, text){
 }
 
 async function api(action, payload = {}){
-  if (!CONFIG.apiEndpoint) throw new Error('API endpoint missing');
-
-  const response = await fetch(CONFIG.apiEndpoint, {
-    method: 'POST',
-    headers: {'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({action, ...payload}),
-    redirect: 'follow'
-  });
-
-  const text = await response.text();
-  if (!response.ok) throw new Error(`API HTTP ${response.status}: ${text.slice(0,160)}`);
-
-  let result;
-  try {
-    result = JSON.parse(text);
-  } catch (_) {
-    throw new Error(`API가 JSON 대신 다른 응답을 반환했어요: ${text.slice(0,160)}`);
-  }
-  if (!result.ok) throw new Error(result.error || 'API error');
-  return result;
+  if (!window.EeveeBackend) throw new Error('Supabase backend missing');
+  return window.EeveeBackend.api(action, payload);
 }
 
 async function load(){
@@ -161,6 +143,17 @@ async function load(){
       battleSaves = Array.isArray(battleResult.battles)
         ? battleResult.battles.map(normalizeBattle)
         : [];
+
+      // Supabase 첫 연결 시 이 브라우저에 남아 있던 저장본도 한 번 옮겨요.
+      if (!battleSaves.length && Array.isArray(localSaves) && localSaves.length){
+        const migrated = [];
+        for (const saved of localSaves.map(normalizeBattle)){
+          if (!saved.id) saved.id = makeBattleId();
+          const result = await api('save_battle', {battle:saved});
+          migrated.push(normalizeBattle(result.battle || saved));
+        }
+        battleSaves = migrated.sort((a,b) => Date.parse(b.updatedAt||0)-Date.parse(a.updatedAt||0));
+      }
 
       // 이 기기에 작업 중인 초안이 없으면 가장 최근의 클라우드 저장본을 열어요.
       if (!localBattle && battleSaves.length){
@@ -840,7 +833,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('focus', () => refreshBattleSaves({silent:true}));
 setInterval(() => { if (!document.hidden) refreshBattleSaves({silent:true}); }, 30000);
 
-load().catch(error => {
+window.EeveeAuth.ready.then(() => load()).catch(error => {
   console.error(error);
   setSync(false);
   say('페이지를 불러오지 못했어요');

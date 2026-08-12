@@ -131,7 +131,6 @@
     const {data,error} = await client
       .from('ebox_items_master')
       .select('id,name,description,price_text,price,item_limit,featured,data')
-      .order('price', {ascending:true, nullsFirst:false})
       .order('name');
     throwIf(error);
     return (data || []).map(row => ({
@@ -150,8 +149,8 @@
     const {data,error} = await client
       .from('ebox_abilities_master')
       .select('id,name,description,sort_order,data')
-      .order('sort_order')
-      .order('name');
+      .order('name')
+      .order('sort_order');
     throwIf(error);
     const grouped = new Map();
     for (const row of (data || [])){

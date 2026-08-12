@@ -11,6 +11,7 @@ let pokemonCatalog = [];
 let pokemonCatalogByName = new Map();
 let speciesMaster = [];
 let speciesMasterByName = new Map();
+let seedPokemonBySpecies = new Map();
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 const toast = $('#toast');
@@ -93,6 +94,7 @@ async function load(){
     fetch('pokemon-base-stats-by-name.json').then(r => r.json()),
     fetch('pokemon-catalog.json').then(r => r.json())
   ]);
+  seedPokemonBySpecies = new Map((seed || []).filter(record => record?.species).map(record => [record.species, record]));
   abilities = abilityData;
   items = itemData;
   moveDex = allMoves;
@@ -232,7 +234,7 @@ function changeLevel(id, delta){
 
 function fillSelect(id, values, selectedValue, emptyLabel){
   const select = $(id);
-  const uniqueValues = [...new Set(values.filter(Boolean))];
+  const uniqueValues = [...new Set(values.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'ko'));
 
   if (selectedValue && !uniqueValues.includes(selectedValue)){
     uniqueValues.unshift(selectedValue);
@@ -252,6 +254,10 @@ function openEditor(id){
     types:[], ability:'', abilityEffect:'', teraType:'', nature:'', heldItem:'',
     notes:'', currentMoves:[], moves:[], stats: normalizeStats({})
   };
+  const seedRecord = seedPokemonBySpecies.get(editing.species);
+  if ((!editing.moves || !editing.moves.length) && seedRecord?.moves?.length){
+    editing.moves = seedRecord.moves.map(move => ({...move}));
+  }
   $('#editorTitle').textContent = id ? '포켓몬 수정' : '포켓몬 추가';
   $('#editId').value = editing.id;
   $('#editNickname').value = editing.nickname || '';
@@ -338,7 +344,11 @@ function itemDescription(name){
 }
 
 function currentMoveOptions(){
-  return [...new Set(['', ...(editing.moves||[]).map(m=>m.name), ...(editing.currentMoves||[])])];
+  const current = (editing.currentMoves || []).filter(Boolean);
+  // Current move slots always use the full move master.
+  // Species-specific learnable moves remain available separately in the move library/search.
+  const source = [...moveDex.map(move => move.name), ...current];
+  return ['', ...[...new Set(source)].sort((a, b) => String(a).localeCompare(String(b), 'ko'))];
 }
 
 function renderMoveInputs(){
@@ -385,8 +395,10 @@ function moveDetail(move){
 
 function renderMoveLibrary(){
   const query = $('#moveSearch').value.trim().toLowerCase();
-  const records = (editing.moves || [])
-    .map(mergedMove)
+  const baseMoves = (editing.moves && editing.moves.length) ? editing.moves : moveDex;
+  const records = baseMoves
+    .map(move => mergedMove(move))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), 'ko'))
     .filter(move => !query || [move.name,move.type,move.category,move.description,move.learnMethod].join(' ').toLowerCase().includes(query));
   $('#moveLibrary').innerHTML = records.map(move => `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}<small>${esc(move.learnMethod||'')} ${move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''} · 우선도 ${esc(move.priority||0)}</small></div>`).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
 }
@@ -419,7 +431,9 @@ function applySpeciesData({notify = true} = {}){
   }
 
   if (masterRecord || catalogRecord){
-    $('#editTypes').value = ((masterRecord?.types?.length ? masterRecord.types : catalogRecord?.types) || []).join(', ');
+    const autoTypes = (masterRecord?.types?.length ? masterRecord.types : catalogRecord?.types) || [];
+    editing.types = [...autoTypes];
+    $('#editTypes').value = autoTypes.join(', ');
     const currentAbility = $('#editAbility').value.trim();
     const availableAbilities = catalogRecord?.abilities || [];
     const nextAbility = availableAbilities.includes(currentAbility) ? currentAbility : '';
@@ -429,7 +443,15 @@ function applySpeciesData({notify = true} = {}){
     fillSpeciesAbilitySelect(species, $('#editAbility').value.trim());
   }
 
-  if (notify) say(`${species}의 타입, 특성, 기본 능력치를 반영했어요`);
+  const seedRecord = seedPokemonBySpecies.get(species);
+  editing.moves = seedRecord?.moves?.length ? seedRecord.moves.map(move => ({...move})) : [];
+  // Do not discard currently selected moves when species changes.
+  // The four current-move dropdowns intentionally allow every move in the master list.
+  editing.currentMoves = (editing.currentMoves || []).filter(Boolean);
+  renderMoveInputs();
+  renderMoveLibrary();
+
+  if (notify) say(`${species}의 타입, 특성, 기본 능력치와 기술 목록을 반영했어요`);
   return true;
 }
 

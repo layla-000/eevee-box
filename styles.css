@@ -990,3 +990,39 @@ details summary{color:#5A82A4}
     grid-template-columns:1fr;
   }
 }
+
+
+/* Battle Box v3.2.4 — vertical Pokémon list, 2×2 move grid */
+.battle-slots{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+
+/* Current move display inside both my/opponent Pokémon cards */
+.battle-slot .moves,
+.battle-slot .move-grid,
+.battle-slot .current-moves,
+.battle-slot .battle-moves{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+/* Keep each move cell from forcing the grid wider */
+.battle-slot .moves > *,
+.battle-slot .move-grid > *,
+.battle-slot .current-moves > *,
+.battle-slot .battle-moves > *{
+  min-width:0;
+}
+
+@media(max-width:520px){
+  .battle-slot .moves,
+  .battle-slot .move-grid,
+  .battle-slot .current-moves,
+  .battle-slot .battle-moves{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+}

@@ -524,3 +524,31 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .battle-save-open small{line-height:1.45}
 @media (max-width:900px){.battle-setup-grid,.team-analysis-grid{grid-template-columns:1fr}.battle-setup-head,.battle-analysis-head{display:block}.lead-hint{margin-top:8px}}
 @media (max-width:600px){.battle-setup-panel,.battle-analysis-panel{padding:15px;border-radius:14px}.segmented-control button{padding:9px 8px}.battle-mode-label{display:flex;width:max-content;margin:.35rem 0 0}.coverage-group{grid-template-columns:1fr}.lead-analysis small{margin-left:0;width:100%}}
+
+/* Battle Box v2.1 — opponent-aware offense coverage */
+.opponent-coverage-card{border-top:1px solid var(--line,#e7eaf0);padding:12px 0}
+.opponent-coverage-card:first-of-type{border-top:0;padding-top:0}
+.opponent-coverage-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
+.opponent-coverage-head>div{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.opponent-coverage-head strong{font-size:.94rem}
+.opponent-index{font-size:.7rem;font-weight:800;color:var(--muted,#667085);letter-spacing:.04em}
+.opponent-type-list{display:flex;gap:4px;flex-wrap:wrap}
+.best-multiplier{flex:0 0 auto;padding:5px 9px;border-radius:999px;font-size:.75rem;font-weight:900;background:rgba(120,130,145,.1)}
+.best-multiplier.quad,.best-multiplier.super{background:rgba(211,54,54,.11);color:#a22626}
+.best-multiplier.neutral{background:rgba(89,110,130,.1);color:#526170}
+.best-multiplier.resist{background:rgba(47,132,95,.1);color:#287351}
+.best-multiplier.immune{background:rgba(60,60,70,.1);color:#555}
+.opponent-hit-groups{display:grid;gap:7px}
+.opponent-hit-group{display:grid;grid-template-columns:66px 1fr;align-items:start;gap:8px}
+.opponent-hit-group>div{display:flex;gap:5px;flex-wrap:wrap}
+.hit-multiplier{font-size:.75rem;font-weight:900;padding-top:4px}
+.opponent-hit-group.quad .hit-multiplier,.opponent-hit-group.super .hit-multiplier{color:#b42318}
+.opponent-hit-group.resist .hit-multiplier{color:#287351}
+.opponent-hit-group.immune .hit-multiplier{color:#555}
+.hit-chip{font-size:.75rem;padding:4px 7px;border-radius:9px;background:rgba(120,130,145,.09);line-height:1.35}
+.hit-chip small{margin-left:3px;color:var(--muted,#667085);font-size:.68rem}
+.opponent-hit-group.quad .hit-chip{background:rgba(211,54,54,.1)}
+.opponent-hit-group.super .hit-chip{background:rgba(239,128,54,.1)}
+.opponent-hit-group.resist .hit-chip{background:rgba(47,132,95,.08)}
+.opponent-hit-group.immune .hit-chip{opacity:.72}
+@media (max-width:600px){.opponent-coverage-head{display:block}.best-multiplier{display:inline-block;margin-top:8px}.opponent-hit-group{grid-template-columns:1fr}.hit-multiplier{padding-top:0}}

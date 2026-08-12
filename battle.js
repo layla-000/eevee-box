@@ -455,6 +455,7 @@ function renderOpponentTeam(){
         renderOpponentStatsPanel(statsPanel, record, null);
         persistLocal();
         updateCounts();
+        renderTeamAnalysis();
         return;
       }
 
@@ -470,6 +471,7 @@ function renderOpponentTeam(){
       renderOpponentStatsPanel(statsPanel, record, selected);
       persistLocal();
       updateCounts();
+      renderTeamAnalysis();
     });
 
     levelInput.addEventListener('input', () => {
@@ -869,20 +871,53 @@ function renderTeamAnalysis(){
       <div class="team-analysis-members">${row.members.map(({record,multiplier}) => `<span>${escapeHtml(record.nickname || record.species)} ×${multiplier}</span>`).join('')}</div>
     </div>`).join('') : '<p class="analysis-empty">겹치는 약점이 없어요.</p>';
 
-  const moveTypes = [...new Set(team.flatMap(record => (record.currentMoves || []).map(name => moves.find(move => move.name === name)?.type).filter(Boolean)))];
-  const coverage = matchup.TYPES.map(defenseType => {
-    const best = moveTypes.length ? Math.max(...moveTypes.map(attackType => matchup.attackMultiplier(attackType,[defenseType]))) : 1;
-    return {defenseType,best};
-  });
-  const strong = coverage.filter(row => row.best > 1).map(row => row.defenseType);
-  const neutral = coverage.filter(row => row.best === 1).map(row => row.defenseType);
-  const poor = coverage.filter(row => row.best < 1).map(row => row.defenseType);
-  const coverageHtml = moveTypes.length ? `
-    <div class="coverage-score"><strong>${strong.length} / ${matchup.TYPES.length}</strong><span>타입을 효과 굉장함으로 공격 가능</span></div>
-    <div class="coverage-group"><span>강점</span><div>${strong.map(typePill).join('') || '<small>없음</small>'}</div></div>
-    <div class="coverage-group"><span>보통</span><div>${neutral.map(typePill).join('') || '<small>없음</small>'}</div></div>
-    ${poor.length ? `<div class="coverage-group weak"><span>커버 불리</span><div>${poor.map(typePill).join('')}</div></div>` : ''}
-    <p class="analysis-caption">현재 등록된 기술의 타입만 사용해 단일 타입 상대 기준으로 계산해요.</p>` : '<p class="analysis-empty">선택한 포켓몬에 현재 기술이 등록되어 있지 않아요.</p>';
+  const teamMoves = team.flatMap(record => (record.currentMoves || []).map(moveName => {
+    const move = moves.find(item => item.name === moveName);
+    return move?.type ? {record, moveName, moveType:move.type} : null;
+  }).filter(Boolean));
+
+  const selectedOpponents = battle.opponentTeam.map((opponent, index) => {
+    const catalog = findCatalogPokemon(opponent.catalogId, opponent.name);
+    const types = catalog?.types?.length
+      ? catalog.types
+      : String(opponent.types || '').split(',').map(value => value.trim()).filter(Boolean);
+    return opponent.name && types.length ? {opponent, index, types} : null;
+  }).filter(Boolean);
+
+  const multiplierLabel = value => {
+    if (value === 0) return '효과 없음';
+    if (value === 0.25) return '×0.25';
+    if (value === 0.5) return '×0.5';
+    return `×${value}`;
+  };
+  const multiplierClass = value => value >= 4 ? 'quad' : value >= 2 ? 'super' : value === 1 ? 'neutral' : value === 0 ? 'immune' : 'resist';
+
+  const opponentCoverageHtml = !selectedOpponents.length
+    ? '<p class="analysis-empty">상대 포켓몬을 선택하면 현재 기술 기준 공격 배율을 분석해요.</p>'
+    : !teamMoves.length
+      ? '<p class="analysis-empty">내 팀에 현재 기술이 등록되어 있지 않아요.</p>'
+      : selectedOpponents.map(({opponent,index,types}) => {
+          const hits = teamMoves.map(entry => ({
+            ...entry,
+            multiplier: matchup.attackMultiplier(entry.moveType, types)
+          })).sort((a,b) => b.multiplier-a.multiplier || a.moveName.localeCompare(b.moveName,'ko'));
+          const best = Math.max(...hits.map(item => item.multiplier));
+          const groups = [4,2,1,0.5,0.25,0].map(multiplier => ({
+            multiplier,
+            hits:hits.filter(item => item.multiplier === multiplier)
+          })).filter(group => group.hits.length);
+          return `<article class="opponent-coverage-card">
+            <div class="opponent-coverage-head">
+              <div><span class="opponent-index">상대 ${index+1}</span><strong>${escapeHtml(opponent.name)}</strong><div class="opponent-type-list">${types.map(typePill).join('')}</div></div>
+              <span class="best-multiplier ${multiplierClass(best)}">최대 ${multiplierLabel(best)}</span>
+            </div>
+            <div class="opponent-hit-groups">${groups.map(group => `
+              <div class="opponent-hit-group ${multiplierClass(group.multiplier)}">
+                <span class="hit-multiplier">${multiplierLabel(group.multiplier)}</span>
+                <div>${group.hits.map(hit => `<span class="hit-chip">${escapeHtml(hit.record.nickname || hit.record.species)} · ${escapeHtml(hit.moveName)} <small>${escapeHtml(hit.moveType)}</small></span>`).join('')}</div>
+              </div>`).join('')}</div>
+          </article>`;
+        }).join('');
 
   const leadHtml = battle.battleFormat === 'double' ? `
     <div class="lead-analysis">
@@ -897,7 +932,7 @@ function renderTeamAnalysis(){
   container.innerHTML = `${leadHtml}
     <div class="team-analysis-grid">
       <section class="team-analysis-card"><div class="team-analysis-head"><span>DEFENSE</span><h3>팀 방어 약점</h3></div>${defenseHtml}</section>
-      <section class="team-analysis-card"><div class="team-analysis-head"><span>OFFENSE</span><h3>실제 기술 공격 커버리지</h3></div>${coverageHtml}</section>
+      <section class="team-analysis-card"><div class="team-analysis-head"><span>OFFENSE</span><h3>상대 팀 공격 커버리지</h3></div>${opponentCoverageHtml}<p class="analysis-caption">내 팀에 등록된 현재 기술을 상대의 실제 단일/복합 타입에 적용해 계산해요.</p></section>
     </div>`;
 }
 

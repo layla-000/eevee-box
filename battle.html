@@ -145,36 +145,32 @@
     <article class="battle-slot opponent-slot">
       <div class="slot-number"></div>
 
-      <div class="opponent-form-grid">
-        <label class="wide">
-          <span>포켓몬</span>
-          <select class="opp-pokemon">
+      <div class="opponent-compact-form">
+        <div class="opponent-identity-row">
+          <select class="opp-pokemon" aria-label="상대 포켓몬">
             <option value="">포켓몬 선택</option>
           </select>
-        </label>
-        <label><span>레벨</span><input class="opp-level" type="number" min="1" max="100" placeholder="45" /></label>
-        <div class="wide">
-          <span class="field-caption">타입</span>
-          <div class="auto-field opp-types-display">포켓몬을 선택하면 자동으로 표시돼요.</div>
+          <div class="opp-types-display compact-types">타입</div>
+          <label class="opponent-level-inline"><span>Lv.</span><input class="opp-level" type="number" min="1" max="100" placeholder="45" /></label>
         </div>
 
-        <div class="wide opponent-stats-panel empty-auto-field">포켓몬을 선택하면 기본 능력치가 표시돼요.</div>
-
-        <label class="wide">
-          <span>특성</span>
+        <div class="opponent-reference-row">
+          <span class="opponent-reference-label">특성</span>
           <select class="opp-ability">
             <option value="">특성 선택</option>
           </select>
-        </label>
-        <div class="reference-detail wide opp-ability-detail">특성을 선택하면 효과가 표시돼요.</div>
+          <div class="reference-detail opp-ability-detail">특성을 선택하면 효과가 표시돼요.</div>
+        </div>
 
-        <label class="wide">
-          <span>지닌 도구</span>
+        <div class="opponent-reference-row">
+          <span class="opponent-reference-label">도구</span>
           <select class="opp-item">
             <option value="">도구 없음</option>
           </select>
-        </label>
-        <div class="reference-detail wide opp-item-detail">도구를 선택하면 효과가 표시돼요.</div>
+          <div class="reference-detail opp-item-detail">도구를 선택하면 효과가 표시돼요.</div>
+        </div>
+
+        <div class="opponent-stats-panel empty-auto-field">포켓몬을 선택하면 기본 능력치가 표시돼요.</div>
       </div>
 
       <div class="opponent-moves-block">

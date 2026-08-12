@@ -552,3 +552,131 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
 .opponent-hit-group.resist .hit-chip{background:rgba(47,132,95,.08)}
 .opponent-hit-group.immune .hit-chip{opacity:.72}
 @media (max-width:600px){.opponent-coverage-head{display:block}.best-multiplier{display:inline-block;margin-top:8px}.opponent-hit-group{grid-template-columns:1fr}.hit-multiplier{padding-top:0}}
+
+/* Battle Box v2.2 — compact opponent cards */
+.opponent-compact-form{
+  display:grid;
+  gap:10px;
+}
+.opponent-identity-row{
+  display:grid;
+  grid-template-columns:minmax(180px,1.35fr) minmax(130px,.9fr) 92px;
+  gap:10px;
+  align-items:center;
+}
+.opponent-identity-row .opp-pokemon{
+  min-width:0;
+  font-weight:800;
+}
+.compact-types{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px;
+  min-height:42px;
+  padding:6px 8px;
+  border:1px solid #e0e7eb;
+  border-radius:11px;
+  background:#f7fafb;
+  color:#71808a;
+  font-size:.76rem;
+}
+.opponent-level-inline{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin:0;
+}
+.opponent-level-inline > span{
+  flex:none;
+  margin:0;
+  color:#6d7b85;
+  font-size:.76rem;
+  font-weight:850;
+}
+.opponent-level-inline input{
+  min-width:0;
+  width:100%;
+}
+.opponent-reference-row{
+  display:grid;
+  grid-template-columns:42px minmax(150px,.72fr) minmax(0,1.6fr);
+  gap:9px;
+  align-items:center;
+}
+.opponent-reference-label{
+  color:#637282;
+  font-size:.74rem;
+  font-weight:850;
+}
+.opponent-reference-row .reference-detail{
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  padding:8px 11px;
+  line-height:1.35;
+}
+.opponent-reference-row .reference-detail small{
+  display:inline;
+  margin:0 0 0 7px;
+}
+.opponent-move-slots{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:start;
+}
+.opponent-move-row{
+  min-width:0;
+  padding:10px;
+  border:1px solid #e1e8ec;
+  border-radius:13px;
+  background:#fbfcfd;
+}
+.opponent-move-row .move-reference-detail{
+  min-height:72px;
+  padding:8px 10px;
+  background:#fff;
+}
+@media (max-width:700px){
+  .opponent-identity-row{
+    grid-template-columns:minmax(0,1fr) auto 80px;
+    gap:7px;
+  }
+  .compact-types{
+    min-width:82px;
+    padding:5px 6px;
+  }
+  .opponent-reference-row{
+    grid-template-columns:36px minmax(105px,.8fr) minmax(0,1.2fr);
+    gap:6px;
+  }
+  .opponent-reference-row .reference-detail{
+    font-size:.7rem;
+    padding:7px 8px;
+  }
+  .opponent-move-slots{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+  .opponent-move-row{
+    padding:7px;
+  }
+  .opponent-move-row .move-reference-detail{
+    min-height:64px;
+    font-size:.69rem;
+  }
+}
+@media (max-width:440px){
+  .opponent-identity-row{
+    grid-template-columns:minmax(0,1fr) 76px;
+  }
+  .compact-types{
+    grid-column:1 / -1;
+    grid-row:2;
+  }
+  .opponent-reference-row{
+    grid-template-columns:34px minmax(0,1fr);
+  }
+  .opponent-reference-row .reference-detail{
+    grid-column:2;
+  }
+}

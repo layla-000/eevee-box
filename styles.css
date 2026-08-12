@@ -752,3 +752,52 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy)}
   .my-move-grid .move-reference-head span{font-size:.6rem}
   .my-move-grid .my-reference-effect{font-size:.7rem}
 }
+
+
+/* Battle Box v2.4 — independent slot headers + polished numbering */
+.slot-number-row{
+  display:flex;
+  align-items:center;
+  min-height:30px;
+  padding:0 0 8px;
+  margin:0 0 2px;
+  border-bottom:1px solid var(--line);
+}
+.slot-number-row .slot-number{
+  position:static;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:auto;
+  min-width:38px;
+  height:26px;
+  padding:0 10px;
+  margin:0;
+  border-radius:999px;
+  font-size:.76rem;
+  font-weight:900;
+  letter-spacing:.04em;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.65), 0 2px 7px rgba(30,55,75,.08);
+}
+.slot-number-row .slot-number::before{
+  content:'#';
+  margin-right:2px;
+  opacity:.62;
+  font-size:.7rem;
+}
+.my-number-row .slot-number{
+  background:linear-gradient(135deg,#eaf5ff,#dfefff);
+  color:#285a82;
+  border:1px solid #c9dff1;
+}
+.opponent-number-row .slot-number{
+  background:linear-gradient(135deg,#fff0f0,#fde5e5);
+  color:#8a4040;
+  border:1px solid #efcece;
+}
+/* v2.4 supersedes the earlier opponent-only header rule */
+.opponent-number-row{
+  min-height:30px;
+  padding-bottom:8px;
+  margin-bottom:2px;
+}

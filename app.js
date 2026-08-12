@@ -9,6 +9,8 @@ let moveMap = new Map();
 let baseStatsByName = {};
 let pokemonCatalog = [];
 let pokemonCatalogByName = new Map();
+let speciesMaster = [];
+let speciesMasterByName = new Map();
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 const toast = $('#toast');
@@ -98,7 +100,46 @@ async function load(){
   baseStatsByName = baseStatData || {};
   pokemonCatalog = Array.isArray(catalogData) ? catalogData : [];
   pokemonCatalogByName = new Map(pokemonCatalog.map(record => [record.name, record]));
-  const speciesNames = [...new Set([...Object.keys(baseStatsByName), ...pokemonCatalog.map(record => record.name)])].sort((a, b) => a.localeCompare(b, 'ko'));
+  let masterNames = [];
+  if (CONFIG.apiEndpoint){
+    try {
+      const speciesResult = await api('list_species');
+      speciesMaster = speciesResult.species || [];
+      speciesMasterByName = new Map(speciesMaster.map(record => [record.name, record]));
+      masterNames = speciesMaster.map(record => record.name);
+
+      try {
+        const movesResult = await api('list_moves');
+        if (movesResult.moves?.length){
+          moveDex = movesResult.moves;
+          moveMap = new Map(moveDex.map(move => [move.name, move]));
+        }
+      } catch (moveError){
+        console.warn('Move master load failed; falling back to bundled moves.json.', moveError);
+      }
+
+      try {
+        const itemsResult = await api('list_items');
+        if (itemsResult.items?.length) items = itemsResult.items;
+      } catch (itemError){
+        console.warn('Item master load failed; falling back to bundled items.json.', itemError);
+      }
+
+      try {
+        const abilitiesResult = await api('list_abilities');
+        if (abilitiesResult.abilities?.length) abilities = abilitiesResult.abilities;
+      } catch (abilityError){
+        console.warn('Ability master load failed; falling back to bundled abilities.json.', abilityError);
+      }
+    } catch (error){
+      console.warn('Species master load failed; falling back to bundled JSON.', error);
+    }
+  }
+  const speciesNames = [...new Set([
+    ...masterNames,
+    ...Object.keys(baseStatsByName),
+    ...pokemonCatalog.map(record => record.name)
+  ])].sort((a, b) => a.localeCompare(b, 'ko'));
   $('#speciesList').innerHTML = speciesNames.map(name => `<option value="${esc(name)}"></option>`).join('');
 
   const local = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -365,7 +406,8 @@ function applySpeciesData({notify = true} = {}){
   const species = $('#editSpecies').value.trim();
   const baseRecord = baseStatsByName[species];
   const catalogRecord = pokemonCatalogByName.get(species);
-  if (!baseRecord && !catalogRecord) return false;
+  const masterRecord = speciesMasterByName.get(species);
+  if (!baseRecord && !catalogRecord && !masterRecord) return false;
 
   if (baseRecord?.stats){
     const current = readStatsEditor();
@@ -376,10 +418,11 @@ function applySpeciesData({notify = true} = {}){
     renderStatsEditor();
   }
 
-  if (catalogRecord){
-    $('#editTypes').value = (catalogRecord.types || []).join(', ');
+  if (masterRecord || catalogRecord){
+    $('#editTypes').value = ((masterRecord?.types?.length ? masterRecord.types : catalogRecord?.types) || []).join(', ');
     const currentAbility = $('#editAbility').value.trim();
-    const nextAbility = (catalogRecord.abilities || []).includes(currentAbility) ? currentAbility : '';
+    const availableAbilities = catalogRecord?.abilities || [];
+    const nextAbility = availableAbilities.includes(currentAbility) ? currentAbility : '';
     fillSpeciesAbilitySelect(species, nextAbility);
     $('#editAbilityEffect').value = abilityDescription(nextAbility);
   } else {

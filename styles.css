@@ -1158,3 +1158,29 @@ details summary{color:#5A82A4}
 .opponent-reference-row .reference-detail small{
   font-size:.66rem !important;
 }
+
+
+/* Battle Box v3.2.8 — opponent final-stat bars */
+.opponent-stat-row-wrap{
+  display:grid;
+  gap:6px;
+}
+.opponent-stat-bar{
+  height:6px;
+  margin:0 2px 2px 108px;
+  border-radius:999px;
+  background:#E7EEF2;
+  overflow:hidden;
+}
+.opponent-stat-bar > span{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#95BDD7,#78A4CB);
+  transition:width .18s ease;
+}
+@media(max-width:700px){
+  .opponent-stat-bar{
+    margin-left:84px;
+  }
+}

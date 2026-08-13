@@ -1,76 +1,76 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#78A4CB" />
-  <title>Eevee Box</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="type-colors.css" />
-  <link rel="stylesheet" href="move-category-colors.css" />
-  <link rel="icon" href="data:,">\n</head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#78A4CB" />
+<title>Eevee Box</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="type-colors.css" />
+<link rel="stylesheet" href="move-category-colors.css" />
+<link rel="stylesheet" href="types.css" />
+<link rel="icon" href="data:,">
+</head>
 <body>
-  <div class="login-screen" id="loginScreen" hidden>
-    <form class="login-card" id="loginForm">
-      <p class="eyebrow">PRIVATE ACCESS</p><h2>Eevee Box</h2>
-      <p>Supabase 계정으로 로그인해 주세요.</p>
-      <label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
-      <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
-      <button class="primary" type="submit">Login</button><p class="login-error" id="loginError"></p>
-    </form>
-  </div>
-
-  <header class="topbar">
-    <div class="brand-block"><p class="eyebrow">PERSONAL POKÉMON DATABASE</p><div class="brand-row"><h1>Eevee Box</h1><a class="header-battle-link" href="battle.html">Battle Page</a></div></div>
-    <div class="sync"><span id="syncDot" class="dot"></span><span id="syncText">Supabase</span><button id="logoutButton" class="logout-button" type="button">로그아웃</button></div>
-  </header>
-  <main>
-    <section class="toolbar">
-      <label class="search"><span>검색</span><input id="searchInput" placeholder="이름, 종류, 타입" /></label>
-      <label><span>타입</span><select id="typeFilter"><option value="">전체</option></select></label>
-      <button id="addButton" class="primary">+ 포켓몬 추가</button>
-    </section>
-    <section class="summary"><strong id="countText">0마리</strong><span>카드의 + / − 버튼으로 레벨을 바로 바꿀 수 있어요.</span></section>
-    <section id="grid" class="grid" aria-live="polite"></section>
-  </main>
-
-  <dialog id="editor">
-    <form id="editorForm" method="dialog">
-      <div class="dialog-head"><h2 id="editorTitle">포켓몬 수정</h2><button type="button" id="closeEditor" class="icon">×</button></div>
-      <input id="editId" type="hidden" />
-      <div class="form-grid">
-        <label>별명<input id="editNickname" required /></label>
-        <label>종류<input id="editSpecies" list="speciesList" required /><datalist id="speciesList"></datalist></label>
-        <label>레벨<input id="editLevel" type="number" min="1" max="100" required /></label>
-        <label>타입<input id="editTypes" placeholder="예: 물, 땅" /></label>
-        <label>특성<select id="editAbility"><option value="">특성 선택</option></select></label>
-        <label>테라 타입<input id="editTera" /></label>
-        <label>성격<input id="editNature" /></label>
-        <label>지닌 도구<select id="editItem"><option value="">도구 없음</option></select></label>
-      </div>
-      <label>특성 효과<textarea id="editAbilityEffect" rows="2" readonly></textarea></label>
-      <label>도구 효과<textarea id="editItemEffect" rows="2" readonly></textarea></label>
-      <fieldset class="stats-editor-fieldset">
-        <legend>능력치 · 포켓몬별 레벨로 자동 계산</legend>
-        <div class="stats-editor-head"><span>능력치</span><span>기본</span><span>노력치</span><span>현재</span></div>
-        <div id="statsEditor" class="stats-editor"></div>
-        <div class="ev-summary"><span>사용한 노력치</span><strong id="evUsed">0 / 510</strong><span id="evRemaining">남음 510</span></div>
-        <p id="evWarning" class="ev-warning" hidden></p>
-      </fieldset>
-      <fieldset><legend>현재 기술 4개</legend><div id="moveSelects" class="move-selects"></div></fieldset>
-      <details><summary>배울 수 있는 기술 검색</summary><input id="moveSearch" placeholder="기술명, 타입, 효과 검색" /><div id="moveLibrary" class="move-library"></div></details>
-      <label>메모<textarea id="editNotes" rows="3"></textarea></label>
-      <div class="dialog-actions"><button type="button" id="deleteButton" class="danger">삭제</button><button type="submit" class="primary">저장</button></div>
-    </form>
-  </dialog>
-  <div id="toast" class="toast" role="status"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.config.js"></script>
-  <script src="supabase-data.js"></script>
-  <script src="auth.js"></script>
-  <script src="type-matchups.js"></script>
-  <script src="app.js"></script>
-  <script src="type-colors.js"></script>
-  <script src="move-category-colors.js"></script>
+<div class="login-screen" id="loginScreen" hidden>
+<form class="login-card" id="loginForm">
+<p class="eyebrow">PRIVATE ACCESS</p><h2>Eevee Box</h2>
+<p>Supabase 계정으로 로그인해 주세요.</p>
+<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+<button class="primary" type="submit">Login</button><p class="login-error" id="loginError"></p>
+</form>
+</div>
+<header class="topbar">
+<div class="brand-block"><p class="eyebrow">PERSONAL POKÉMON DATABASE</p><div class="brand-row"><h1>Eevee Box</h1><div class="header-page-links"><a class="header-battle-link" href="types.html">상성표</a><a class="header-battle-link" href="battle.html">Battle Page</a></div></div></div>
+<div class="sync"><span id="syncDot" class="dot"></span><span id="syncText">Supabase</span><button id="logoutButton" class="logout-button" type="button">로그아웃</button></div>
+</header>
+<main>
+<section class="toolbar">
+<label class="search"><span>검색</span><input id="searchInput" placeholder="이름, 종류, 타입" /></label>
+<label><span>타입</span><select id="typeFilter"><option value="">전체</option></select></label>
+<button id="addButton" class="primary">+ 포켓몬 추가</button>
+</section>
+<section class="summary"><strong id="countText">0마리</strong><span>카드의 + / − 버튼으로 레벨을 바로 바꿀 수 있어요.</span></section>
+<section id="grid" class="grid" aria-live="polite"></section>
+</main>
+<dialog id="editor">
+<form id="editorForm" method="dialog">
+<div class="dialog-head"><h2 id="editorTitle">포켓몬 수정</h2><button type="button" id="closeEditor" class="icon">×</button></div>
+<input id="editId" type="hidden" />
+<div class="form-grid">
+<label>별명<input id="editNickname" required /></label>
+<label>종류<input id="editSpecies" list="speciesList" required /><datalist id="speciesList"></datalist></label>
+<label>레벨<input id="editLevel" type="number" min="1" max="100" required /></label>
+<label>타입<input id="editTypes" placeholder="예: 물, 땅" /></label>
+<label>특성<select id="editAbility"><option value="">특성 선택</option></select></label>
+<label>테라 타입<input id="editTera" /></label>
+<label>성격<input id="editNature" /></label>
+<label>지닌 도구<select id="editItem"><option value="">도구 없음</option></select></label>
+</div>
+<label>특성 효과<textarea id="editAbilityEffect" rows="2" readonly></textarea></label>
+<label>도구 효과<textarea id="editItemEffect" rows="2" readonly></textarea></label>
+<fieldset class="stats-editor-fieldset">
+<legend>능력치 · 포켓몬별 레벨로 자동 계산</legend>
+<div class="stats-editor-head"><span>능력치</span><span>기본</span><span>노력치</span><span>현재</span></div>
+<div id="statsEditor" class="stats-editor"></div>
+<div class="ev-summary"><span>사용한 노력치</span><strong id="evUsed">0 / 510</strong><span id="evRemaining">남음 510</span></div>
+<p id="evWarning" class="ev-warning" hidden></p>
+</fieldset>
+<fieldset><legend>현재 기술 4개</legend><div id="moveSelects" class="move-selects"></div></fieldset>
+<details><summary>배울 수 있는 기술 검색</summary><input id="moveSearch" placeholder="기술명, 타입, 효과 검색" /><div id="moveLibrary" class="move-library"></div></details>
+<label>메모<textarea id="editNotes" rows="3"></textarea></label>
+<div class="dialog-actions"><button type="button" id="deleteButton" class="danger">삭제</button><button type="submit" class="primary">저장</button></div>
+</form>
+</dialog>
+<div id="toast" class="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.config.js"></script>
+<script src="supabase-data.js"></script>
+<script src="auth.js"></script>
+<script src="type-matchups.js"></script>
+<script src="app.js"></script>
+<script src="type-colors.js"></script>
+<script src="move-category-colors.js"></script>
 </body>
 </html>

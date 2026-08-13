@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#78A4CB" />
+<title>상성표 · Eevee Box</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="type-colors.css" />
+<link rel="stylesheet" href="types.css" />
+<link rel="icon" href="data:,">
+</head>
+<body class="types-page">
+<div class="login-screen" id="loginScreen" hidden>
+<form class="login-card" id="loginForm">
+<p class="eyebrow">PRIVATE ACCESS</p><h2>Eevee Box</h2>
+<p>Supabase 계정으로 로그인해 주세요.</p>
+<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+<button class="primary" type="submit">Login</button><p class="login-error" id="loginError"></p>
+</form>
+</div>
+<header class="topbar">
+<div class="brand-block">
+<p class="eyebrow">BATTLE REFERENCE</p>
+<div class="brand-row"><h1>상성표</h1><div class="header-page-links"><a class="header-battle-link" href="index.html">Pokémon List</a><a class="header-battle-link" href="battle.html">Battle Page</a></div></div>
+</div>
+<div class="sync"><span class="dot online"></span><span>Type Guide</span><button id="logoutButton" class="logout-button" type="button">로그아웃</button></div>
+</header>
+<main class="types-main">
+<section class="types-intro">
+<div><p class="eyebrow">TYPE MATCHUP</p><h2>보고 싶은 타입을 눌러 주세요.</h2><p>단일 타입은 한 번에 바로 확인하고, 두 번째 타입을 고르면 복합 타입의 방어 상성을 자동으로 계산해요.</p></div>
+<a class="types-back-link" href="index.html">← 포켓몬 목록</a>
+</section>
+
+<section class="type-picker-card" aria-labelledby="typePickerTitle">
+<div class="type-picker-head"><div><span class="types-kicker">QUICK SELECT</span><h2 id="typePickerTitle">타입 선택</h2></div><button id="clearType2" class="type-clear-button" type="button">복합 타입 해제</button></div>
+<div id="typeQuickGrid" class="type-quick-grid" aria-label="타입 빠른 선택"></div>
+<div class="type-select-row">
+<label><span>타입 1</span><select id="type1Select"></select></label>
+<span class="type-plus">+</span>
+<label><span>타입 2 <small>선택</small></span><select id="type2Select"><option value="">없음</option></select></label>
+</div>
+</section>
+
+<section id="typeResult" class="type-result" aria-live="polite"></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.config.js"></script>
+<script src="auth.js"></script>
+<script src="type-matchups.js"></script>
+<script src="type-colors.js"></script>
+<script src="types.js"></script>
+</body>
+</html>

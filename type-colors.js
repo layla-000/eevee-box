@@ -139,11 +139,147 @@
     });
   }
 
+
+  // Battle Box enhancements: matchup shortcut, stable EV input, opponent Tera type.
+  function injectBattleEnhancementStyles(){
+    if (document.getElementById("battleEnhancementStyles")) return;
+    const style = document.createElement("style");
+    style.id = "battleEnhancementStyles";
+    style.textContent = `
+      .battle-title-row{flex-wrap:wrap}
+      .battle-matchup-button{background:#fff!important;color:#526A78!important;border-color:rgba(255,255,255,.72)!important}
+      .opponent-tera-row{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:center}
+      .opponent-tera-row .opponent-reference-label{align-self:center}
+      .opp-tera-select{width:100%;min-width:0;border-left:6px solid var(--selected-type-color,var(--line))!important;font-weight:800}
+      .opp-tera-select.has-tera{background:color-mix(in srgb,var(--selected-type-color) 12%,#fff)!important}
+      @media(max-width:700px){.opponent-tera-row{grid-template-columns:48px minmax(0,1fr)}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureBattleMatchupButton(){
+    const titleRow = document.querySelector(".battle-title-row");
+    if (!titleRow || titleRow.querySelector(".battle-matchup-button")) return;
+    const button = document.createElement("a");
+    button.className = "battle-home-button battle-matchup-button";
+    button.href = "./types.html";
+    button.textContent = "상성표";
+    titleRow.appendChild(button);
+  }
+
+  function applyTeraSelectColor(select){
+    const type = normalize(select.value);
+    select.classList.toggle("has-tera", Boolean(TYPE_COLORS[type]));
+    select.style.setProperty("--selected-type-color", TYPE_COLORS[type] || "var(--line)");
+  }
+
+  function opponentRecordForSlot(slot){
+    const slots = [...document.querySelectorAll("#opponentTeam .battle-slot")];
+    const index = slots.indexOf(slot);
+    if (index < 0 || typeof battle === "undefined") return null;
+    return {record:battle.opponentTeam?.[index], index};
+  }
+
+  function ensureOpponentTeraSelects(){
+    document.querySelectorAll("#opponentTeam .opponent-slot").forEach(slot => {
+      const found = opponentRecordForSlot(slot);
+      if (!found?.record) return;
+      let row = slot.querySelector(".opponent-tera-row");
+      if (!row){
+        row = document.createElement("div");
+        row.className = "opponent-reference-row opponent-tera-row";
+        row.innerHTML = `<span class="opponent-reference-label">테라</span><select class="opp-tera-select type-aware-select" aria-label="상대 포켓몬 테라스탈 타입"><option value="">테라스탈 없음</option>${TYPE_NAMES.map(type => `<option value="${type}" style="color:${TYPE_COLORS[type]};font-weight:700">${type}</option>`).join("")}</select>`;
+        const compactForm = slot.querySelector(".opponent-compact-form");
+        const stats = slot.querySelector(".opponent-stats-panel");
+        if (compactForm && stats) compactForm.insertBefore(row, stats);
+        else compactForm?.appendChild(row);
+      }
+      const select = row.querySelector(".opp-tera-select");
+      if (!select) return;
+      const current = String(found.record.teraType || "");
+      if (select.value !== current) select.value = current;
+      if (!select.dataset.teraBound){
+        select.dataset.teraBound = "true";
+        select.addEventListener("change", () => {
+          const latest = opponentRecordForSlot(slot);
+          if (!latest?.record) return;
+          latest.record.teraType = select.value;
+          applyTeraSelectColor(select);
+          if (typeof persistLocal === "function") persistLocal();
+          if (typeof renderTeamAnalysis === "function") renderTeamAnalysis();
+        });
+      }
+      applyTeraSelectColor(select);
+    });
+  }
+
+  function updateOpponentStatUI(input, record){
+    const panel = input.closest(".opponent-stats-panel");
+    const rowWrap = input.closest(".opponent-stat-row-wrap");
+    if (!panel || !rowWrap || !record?.stats) return;
+    const key = rowWrap.dataset.stat;
+    const stat = record.stats[key];
+    if (!stat) return;
+    const value = input.value === "" ? 0 : Math.max(0, Math.min(252, Math.floor(Number(input.value) || 0)));
+    stat.ev = value;
+    const final = typeof calculateBattleStat === "function"
+      ? calculateBattleStat(key, stat.base, value, record.level)
+      : 0;
+    const finalEl = rowWrap.querySelector(".opp-final-stat");
+    if (finalEl) finalEl.textContent = String(final);
+    const bar = rowWrap.querySelector(".opponent-stat-bar > span");
+    if (bar) bar.style.width = `${Math.min(100, Math.max(4, final / 3.2))}%`;
+    const used = Object.values(record.stats).reduce((sum, item) => sum + (Number(item?.ev) || 0), 0);
+    const remaining = 510 - used;
+    const total = panel.querySelector(".opp-ev-total");
+    if (total){
+      total.textContent = `${used} / 510 EV · 남음 ${remaining}`;
+      total.classList.toggle("over", remaining < 0);
+    }
+    const warning = panel.querySelector(".opp-ev-warning");
+    if (warning) warning.hidden = remaining >= 0;
+  }
+
+  function bindStableEvInputs(){
+    if (document.documentElement.dataset.stableEvBound) return;
+    document.documentElement.dataset.stableEvBound = "true";
+    document.addEventListener("input", event => {
+      const input = event.target.closest?.(".opp-stat-ev");
+      if (!input) return;
+      event.stopImmediatePropagation();
+      const slot = input.closest(".opponent-slot");
+      const found = opponentRecordForSlot(slot);
+      if (!found?.record) return;
+      updateOpponentStatUI(input, found.record);
+      if (typeof persistLocal === "function") persistLocal();
+    }, true);
+    document.addEventListener("blur", event => {
+      const input = event.target.closest?.(".opp-stat-ev");
+      if (!input) return;
+      const slot = input.closest(".opponent-slot");
+      const found = opponentRecordForSlot(slot);
+      if (!found?.record) return;
+      const value = Math.max(0, Math.min(252, Math.floor(Number(input.value) || 0)));
+      input.value = String(value);
+      updateOpponentStatUI(input, found.record);
+      if (typeof persistLocal === "function") persistLocal();
+    }, true);
+  }
+
+  function enhanceBattlePage(){
+    if (!document.querySelector(".battle-main")) return;
+    injectBattleEnhancementStyles();
+    ensureBattleMatchupButton();
+    ensureOpponentTeraSelects();
+    bindStableEvInputs();
+  }
+
   function paint(){
     scheduled = false;
     colorTypeLabels();
     colorMoveCards();
     bindMoveSelects();
+    enhanceBattlePage();
   }
 
   function schedulePaint(){

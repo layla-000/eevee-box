@@ -80,6 +80,7 @@ async function load(){
     data = pokemonResult.records || [];
     const speciesNames = [...new Set(speciesMaster.map(record => record.name).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ko'));
     $('#speciesList').innerHTML = speciesNames.map(name => `<option value="${esc(name)}"></option>`).join('');
+    enhanceSpeciesSearchField();
     setSync(true);
     render();
   } catch (error){
@@ -294,8 +295,10 @@ function renderMoveInputs(){
   document.querySelectorAll('.move-select').forEach(select => {
     select.onchange = () => {
       const detail = moveMap.get(select.value);
-      select.parentElement.querySelector('.move-detail').innerHTML = detail ? moveDetail(detail) : '';
+      const slot = select.closest('.move-slot');
+      if (slot) slot.querySelector('.move-detail').innerHTML = detail ? moveDetail(detail) : '';
     };
+    enhanceMoveSearchSelect(select);
   });
 }
 
@@ -338,6 +341,284 @@ function renderMoveLibrary(){
     .sort((a, b) => String(a.name).localeCompare(String(b.name), 'ko'))
     .filter(move => !query || [move.name,move.type,move.category,move.description,move.learnMethod].join(' ').toLowerCase().includes(query));
   $('#moveLibrary').innerHTML = records.map(move => `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}<small>${esc(move.learnMethod||'')} ${move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''} · 우선도 ${esc(move.priority||0)}</small></div>`).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
+}
+
+
+function mainSearchKey(value){
+  return String(value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase('ko-KR')
+    .replace(/[·•()\[\]{}._\-/\\]/gu, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+function injectMainSearchStyles(){
+  if (document.getElementById('mainSearchComboboxStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'mainSearchComboboxStyles';
+  style.textContent = `
+    .main-search-combobox{position:relative;width:100%;min-width:0}
+    .main-search-combobox-input{width:100%;padding-right:38px!important;background:#fff}
+    .main-search-combobox.has-value .main-search-combobox-input{font-weight:800}
+    .main-search-combobox-input.move-search-input{border-left:6px solid var(--selected-type-color,var(--line))!important}
+    .main-search-combobox-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:3;width:24px;height:24px;padding:0;border:0;background:transparent;color:#71818b;font-size:14px;line-height:1;cursor:pointer}
+    .main-search-combobox-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:1200;display:none;max-height:300px;overflow:auto;padding:6px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(28,49,63,.16)}
+    .main-search-combobox.open .main-search-combobox-list{display:block}
+    .main-search-combobox-option{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:0;border-radius:9px;background:transparent;color:inherit;text-align:left;cursor:pointer}
+    .main-search-combobox-option:hover,.main-search-combobox-option.active{background:#f2f6f8}
+    .main-search-combobox-option-main{min-width:0;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .main-search-combobox-option-meta{display:flex;gap:5px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex:0 0 auto;color:#71818b;font-size:12px}
+    .main-search-combobox-option-meta .mini-type{padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--mini-type-color) 18%,#fff);color:color-mix(in srgb,var(--mini-type-color) 72%,#263238);font-weight:800}
+    .main-search-combobox-empty{padding:12px 10px;color:#8998a1;font-size:13px}
+    .main-search-combobox-source{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important;clip:rect(0 0 0 0)!important}
+    @media(max-width:700px){.main-search-combobox-list{max-height:250px}.main-search-combobox-option{padding:10px 9px}.main-search-combobox-option-meta{font-size:11px}}
+  `;
+  document.head.appendChild(style);
+}
+
+function typeColorFor(type){
+  return window.EeveeBoxTypeColors?.colors?.[type] || '#9aa7ad';
+}
+
+function renderMainSearchOption(button, label, types = [], metaText = ''){
+  const main = document.createElement('span');
+  main.className = 'main-search-combobox-option-main';
+  main.textContent = label;
+  button.appendChild(main);
+  if (!types.length && !metaText) return;
+  const aside = document.createElement('span');
+  aside.className = 'main-search-combobox-option-meta';
+  types.forEach(type => {
+    const pill = document.createElement('span');
+    pill.className = 'mini-type';
+    pill.textContent = type;
+    pill.style.setProperty('--mini-type-color', typeColorFor(type));
+    aside.appendChild(pill);
+  });
+  if (metaText){
+    const text = document.createElement('span');
+    text.textContent = metaText;
+    aside.appendChild(text);
+  }
+  button.appendChild(aside);
+}
+
+function enhanceSpeciesSearchField(){
+  const input = $('#editSpecies');
+  if (!input || input.dataset.searchComboboxBound === 'true') return;
+  injectMainSearchStyles();
+  input.dataset.searchComboboxBound = 'true';
+  input.removeAttribute('list');
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.classList.add('main-search-combobox-input');
+  input.placeholder = '포켓몬 종류 검색';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'main-search-combobox';
+  input.parentNode.insertBefore(wrapper, input);
+  wrapper.appendChild(input);
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'main-search-combobox-toggle';
+  toggle.textContent = '▾';
+  toggle.setAttribute('aria-label', '포켓몬 후보 목록 열기');
+  toggle.tabIndex = -1;
+  const list = document.createElement('div');
+  list.className = 'main-search-combobox-list';
+  list.setAttribute('role', 'listbox');
+  wrapper.append(toggle, list);
+
+  let shown = [];
+  let activeIndex = -1;
+  const records = () => speciesMaster
+    .filter(record => record?.name)
+    .map(record => ({name:record.name, types:Array.isArray(record.types) ? record.types : []}));
+
+  function closeList(){
+    wrapper.classList.remove('open');
+    input.setAttribute('aria-expanded','false');
+    activeIndex = -1;
+  }
+  function setActive(index){
+    const buttons = [...list.querySelectorAll('.main-search-combobox-option')];
+    if (!buttons.length){activeIndex=-1;return;}
+    activeIndex=((index%buttons.length)+buttons.length)%buttons.length;
+    buttons.forEach((button,idx)=>button.classList.toggle('active',idx===activeIndex));
+    buttons[activeIndex]?.scrollIntoView({block:'nearest'});
+  }
+  function choose(record){
+    if (!record) return;
+    input.value = record.name;
+    wrapper.classList.add('has-value');
+    closeList();
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    requestAnimationFrame(()=>{
+      input.focus({preventScroll:true});
+      input.setSelectionRange?.(input.value.length,input.value.length);
+    });
+  }
+  function filtered(query){
+    const key=mainSearchKey(query);
+    const all=records();
+    if (!key) return all.slice(0,60);
+    const starts=[], contains=[];
+    all.forEach(record=>{
+      const nameKey=mainSearchKey(record.name);
+      const combined=mainSearchKey(`${record.name} ${record.types.join(' ')}`);
+      if (nameKey.startsWith(key)) starts.push(record);
+      else if (combined.includes(key)) contains.push(record);
+    });
+    return [...starts,...contains].slice(0,60);
+  }
+  function renderList(query=input.value){
+    shown=filtered(query);
+    list.innerHTML='';
+    activeIndex=-1;
+    if (!shown.length){
+      const empty=document.createElement('div');
+      empty.className='main-search-combobox-empty';
+      empty.textContent='일치하는 포켓몬이 없어요.';
+      list.appendChild(empty);
+    } else {
+      shown.forEach((record,index)=>{
+        const button=document.createElement('button');
+        button.type='button';
+        button.className='main-search-combobox-option';
+        renderMainSearchOption(button,record.name,record.types,'');
+        button.addEventListener('mousedown',event=>event.preventDefault());
+        button.addEventListener('click',()=>choose(record));
+        list.appendChild(button);
+        if(index===0)setActive(0);
+      });
+    }
+    wrapper.classList.add('open');
+    input.setAttribute('aria-expanded','true');
+  }
+  input.setAttribute('role','combobox');
+  input.setAttribute('aria-autocomplete','list');
+  input.setAttribute('aria-expanded','false');
+  input.addEventListener('focus',()=>renderList(speciesMasterByName.has(input.value.trim()) ? '' : input.value));
+  input.addEventListener('click',()=>renderList(speciesMasterByName.has(input.value.trim()) ? '' : input.value));
+  input.addEventListener('input',()=>{wrapper.classList.toggle('has-value',speciesMasterByName.has(input.value.trim()));renderList(input.value);});
+  input.addEventListener('keydown',event=>{
+    if(event.key==='ArrowDown'){event.preventDefault();if(!wrapper.classList.contains('open'))renderList(input.value);setActive(activeIndex+1);}
+    else if(event.key==='ArrowUp'){event.preventDefault();if(!wrapper.classList.contains('open'))renderList(input.value);setActive(activeIndex-1);}
+    else if(event.key==='Enter'&&wrapper.classList.contains('open')){event.preventDefault();choose(shown[Math.max(0,activeIndex)]);}
+    else if(event.key==='Escape'){event.preventDefault();closeList();}
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>{if(!wrapper.contains(document.activeElement))closeList();},80));
+  toggle.addEventListener('mousedown',event=>event.preventDefault());
+  toggle.addEventListener('click',()=>{if(wrapper.classList.contains('open'))closeList();else{input.focus();renderList('');}});
+}
+
+function enhanceMoveSearchSelect(select){
+  if (!select || select.dataset.searchComboboxBound === 'true') return;
+  injectMainSearchStyles();
+  select.dataset.searchComboboxBound = 'true';
+
+  const wrapper=document.createElement('div');
+  wrapper.className='main-search-combobox';
+  const input=document.createElement('input');
+  input.type='text';
+  input.autocomplete='off';
+  input.spellcheck=false;
+  input.className='main-search-combobox-input move-search-input';
+  input.placeholder='기술 이름 검색';
+  input.setAttribute('role','combobox');
+  input.setAttribute('aria-autocomplete','list');
+  input.setAttribute('aria-expanded','false');
+  const toggle=document.createElement('button');
+  toggle.type='button';
+  toggle.className='main-search-combobox-toggle';
+  toggle.textContent='▾';
+  toggle.setAttribute('aria-label','기술 후보 목록 열기');
+  toggle.tabIndex=-1;
+  const list=document.createElement('div');
+  list.className='main-search-combobox-list';
+  list.setAttribute('role','listbox');
+
+  select.parentNode.insertBefore(wrapper,select);
+  wrapper.append(input,toggle,list,select);
+  select.classList.add('main-search-combobox-source');
+
+  let shown=[];
+  let activeIndex=-1;
+  function records(){
+    return [...select.options].filter(option=>option.value).map(option=>{
+      const move=moveMap.get(option.value);
+      return {value:option.value,label:String(option.textContent||'').trim(),move};
+    });
+  }
+  function selectedLabel(){const option=select.options[select.selectedIndex];return option?.value ? String(option.textContent||'').trim() : '';}
+  function updateColor(){
+    const type=moveMap.get(select.value)?.type;
+    input.style.setProperty('--selected-type-color',type ? typeColorFor(type) : 'var(--line)');
+  }
+  function syncFromSelect(){input.value=selectedLabel();wrapper.classList.toggle('has-value',Boolean(select.value));updateColor();}
+  function closeList(){wrapper.classList.remove('open');input.setAttribute('aria-expanded','false');activeIndex=-1;}
+  function setActive(index){
+    const buttons=[...list.querySelectorAll('.main-search-combobox-option')];
+    if(!buttons.length){activeIndex=-1;return;}
+    activeIndex=((index%buttons.length)+buttons.length)%buttons.length;
+    buttons.forEach((button,idx)=>button.classList.toggle('active',idx===activeIndex));
+    buttons[activeIndex]?.scrollIntoView({block:'nearest'});
+  }
+  function choose(record){
+    if(!record)return;
+    select.value=record.value;
+    syncFromSelect();
+    closeList();
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+    requestAnimationFrame(()=>{syncFromSelect();input.focus({preventScroll:true});input.setSelectionRange?.(input.value.length,input.value.length);});
+  }
+  function filtered(query){
+    const key=mainSearchKey(query);
+    const all=records();
+    if(!key)return all.slice(0,60);
+    const starts=[],contains=[];
+    all.forEach(record=>{
+      const move=record.move||{};
+      const labelKey=mainSearchKey(record.label);
+      const combined=mainSearchKey(`${record.label} ${move.type||''} ${move.category||''} ${move.power||''} ${move.description||''}`);
+      if(labelKey.startsWith(key))starts.push(record);else if(combined.includes(key))contains.push(record);
+    });
+    return [...starts,...contains].slice(0,60);
+  }
+  function renderList(query=input.value){
+    shown=filtered(query);list.innerHTML='';activeIndex=-1;
+    if(!shown.length){const empty=document.createElement('div');empty.className='main-search-combobox-empty';empty.textContent='일치하는 기술이 없어요.';list.appendChild(empty);}
+    else shown.forEach((record,index)=>{
+      const move=record.move||{};
+      const button=document.createElement('button');button.type='button';button.className='main-search-combobox-option';
+      const meta=[move.category,move.power?`위력 ${move.power}`:''].filter(Boolean).join(' · ');
+      renderMainSearchOption(button,record.label,move.type?[move.type]:[],meta);
+      button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>choose(record));list.appendChild(button);if(index===0)setActive(0);
+    });
+    wrapper.classList.add('open');input.setAttribute('aria-expanded','true');
+  }
+  input.addEventListener('focus',()=>renderList(input.value===selectedLabel()?'':input.value));
+  input.addEventListener('click',()=>renderList(input.value===selectedLabel()?'':input.value));
+  input.addEventListener('input',()=>renderList(input.value));
+  input.addEventListener('keydown',event=>{
+    if(event.key==='ArrowDown'){event.preventDefault();if(!wrapper.classList.contains('open'))renderList(input.value);setActive(activeIndex+1);}
+    else if(event.key==='ArrowUp'){event.preventDefault();if(!wrapper.classList.contains('open'))renderList(input.value);setActive(activeIndex-1);}
+    else if(event.key==='Enter'&&wrapper.classList.contains('open')){event.preventDefault();choose(shown[Math.max(0,activeIndex)]);}
+    else if(event.key==='Escape'){event.preventDefault();syncFromSelect();closeList();}
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>{
+    if(!wrapper.contains(document.activeElement)){
+      const exact=records().find(record=>mainSearchKey(record.label)===mainSearchKey(input.value));
+      if(exact&&exact.value!==select.value)choose(exact);else syncFromSelect();
+      closeList();
+    }
+  },80));
+  toggle.addEventListener('mousedown',event=>event.preventDefault());
+  toggle.addEventListener('click',()=>{if(wrapper.classList.contains('open'))closeList();else{input.focus();renderList('');}});
+  select.addEventListener('change',syncFromSelect);
+  syncFromSelect();
 }
 
 function fillSpeciesAbilitySelect(species, selectedValue = ''){
@@ -453,6 +734,7 @@ function esc(value){
 }
 
 (async () => {
+  injectMainSearchStyles();
   const select = $('#typeFilter');
   await window.EeveeAuth.ready;
   await load();

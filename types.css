@@ -43,7 +43,7 @@
 .type-result-row>strong{padding-top:5px;font-size:.68rem;color:#687b86}
 .type-result-row>div,.type-neutral-row>div{display:flex;flex-wrap:wrap;gap:5px}
 .type-result-row .type-pill,.type-neutral-row .type-pill{min-height:24px;padding:4px 8px;font-size:.65rem}
-.type-result-row.danger-strong>strong{color:#b42318}.type-result-row.danger>strong{color:#d04a3a}
+.type-result-row.danger-strong>strong{color:#fff!important;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.22)}.type-result-row.danger>strong{color:#fff!important;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.22)}
 .type-result-row.immune>strong{color:#5c6670}.type-result-row.resist-strong>strong{color:#087a66}.type-result-row.resist>strong{color:#218b78}
 .type-result-row.attack-strong>strong{color:#16734f}.type-result-row.attack-resist>strong{color:#9a6b16}
 .type-neutral-row{padding-top:8px;border-top:1px dashed #e2e8eb}

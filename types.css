@@ -71,3 +71,24 @@
   .type-result-row{grid-template-columns:62px minmax(0,1fr);gap:6px}
   .type-detail-card{padding:12px}
 }
+
+/* Weakness emphasis: x2 = light red, x4 = deep red */
+.type-result-row.danger {
+  background: #fde8ea;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.type-result-row.danger > strong {
+  color: #a93345 !important;
+  text-shadow: none;
+}
+
+.type-result-row.danger-strong {
+  background: #a93345;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.type-result-row.danger-strong > strong {
+  color: #fff !important;
+  text-shadow: none;
+}

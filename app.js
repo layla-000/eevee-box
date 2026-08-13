@@ -118,6 +118,7 @@ function types(){
 }
 
 function render(){
+  ensureMovePriorityStyles();
   const query = $('#searchInput').value.trim().toLowerCase();
   const selectedType = $('#typeFilter').value;
   const filtered = data
@@ -130,6 +131,42 @@ function render(){
   grid.querySelectorAll('[data-level]').forEach(button => button.onclick = () => changeLevel(button.dataset.level, Number(button.dataset.delta)));
 }
 
+function priorityNumber(move){
+  const raw = move?.priority;
+  if (raw === '' || raw == null || raw === '-') return 0;
+  const value = Number(String(raw).replace('+','').trim());
+  return Number.isFinite(value) ? value : 0;
+}
+
+function priorityLabel(move){
+  const value = priorityNumber(move);
+  if (!value) return '';
+  return `우선도 ${value > 0 ? '+' : ''}${value}`;
+}
+
+function priorityBadgeHtml(move){
+  const label = priorityLabel(move);
+  return label ? `<span class="move-priority-badge">${esc(label)}</span>` : '';
+}
+
+function cardMoveHtml(name){
+  if (!name) return '—';
+  const move = moveMap.get(name);
+  return `<span class="card-move-name">${esc(name)}</span>${priorityBadgeHtml(move)}`;
+}
+
+function ensureMovePriorityStyles(){
+  if (document.getElementById('movePriorityStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'movePriorityStyles';
+  style.textContent = `
+    .move-priority-badge{display:inline-flex;align-items:center;width:max-content;flex:0 0 auto;padding:.18rem .48rem!important;border:1px solid #ead18a!important;border-radius:999px!important;background:#fff4cf!important;color:#765200!important;font-size:.72rem!important;font-weight:800!important;line-height:1.25!important;white-space:nowrap}
+    .moves li{display:flex;align-items:center;justify-content:space-between;gap:6px}
+    .card-move-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  `;
+  document.head.appendChild(style);
+}
+
 function card(p){
   return `<article class="card">
     <div class="card-head"><div><h3>${esc(p.nickname||p.species)}</h3><div class="species">${esc(p.species)}</div></div><button data-edit="${p.id}">수정</button></div>
@@ -137,7 +174,7 @@ function card(p){
     <div class="level-row"><span>현재 레벨</span><strong>Lv.${p.level||1}</strong><div class="level-controls"><button data-level="${p.id}" data-delta="-1">−</button><button data-level="${p.id}" data-delta="1">+</button></div></div>
     ${statsPanel(p)}
     ${window.EeveeTypeMatchups?.summary(p.types || [], p.teraType || '') || ''}
-    <ul class="moves">${[0,1,2,3].map(i=>`<li>${esc((p.currentMoves||[])[i]||'—')}</li>`).join('')}</ul>
+    <ul class="moves">${[0,1,2,3].map(i=>`<li>${cardMoveHtml((p.currentMoves||[])[i]||'')}</li>`).join('')}</ul>
     <div class="card-foot"><span>${esc(p.ability||'특성 미입력')}</span><span>${p.heldItem?esc(p.heldItem):'도구 없음'}</span></div>
   </article>`;
 }
@@ -326,7 +363,7 @@ function normalizeAccuracy(value){
   return text;
 }
 function moveDetail(move){
-  return `<div class="move-meta"><span>${esc(move.type||'-')}</span><span>${esc(move.category||'-')}</span><span>위력 ${esc(move.power||'-')}</span><span>명중 ${esc(normalizeAccuracy(move.accuracy)||'-')}</span><span>PP ${esc(move.pp||'-')}</span></div><p>${esc(move.description||'효과 정보 없음')}</p>`;
+  return `<div class="move-meta"><span>${esc(move.type||'-')}</span><span>${esc(move.category||'-')}</span><span>위력 ${esc(move.power||'-')}</span><span>명중 ${esc(normalizeAccuracy(move.accuracy)||'-')}</span><span>PP ${esc(move.pp||'-')}</span>${priorityBadgeHtml(move)}</div><p>${esc(move.description||'효과 정보 없음')}</p>`;
 }
 
 function renderMoveLibrary(){
@@ -340,7 +377,10 @@ function renderMoveLibrary(){
     .map(move => mergedMove(move))
     .sort((a, b) => String(a.name).localeCompare(String(b.name), 'ko'))
     .filter(move => !query || [move.name,move.type,move.category,move.description,move.learnMethod].join(' ').toLowerCase().includes(query));
-  $('#moveLibrary').innerHTML = records.map(move => `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}<small>${esc(move.learnMethod||'')} ${move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''} · 우선도 ${esc(move.priority||0)}</small></div>`).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
+  $('#moveLibrary').innerHTML = records.map(move => {
+    const learn = [esc(move.learnMethod||''), move.learnLevel && move.learnLevel !== '-' ? `Lv.${esc(move.learnLevel)}` : ''].filter(Boolean).join(' ');
+    return `<div class="move-row"><strong>${esc(move.name)}</strong>${moveDetail(move)}${learn ? `<small>${learn}</small>` : ''}</div>`;
+  }).join('') || '<div class="move-row">검색 결과가 없어요.</div>';
 }
 
 
@@ -381,12 +421,12 @@ function typeColorFor(type){
   return window.EeveeBoxTypeColors?.colors?.[type] || '#9aa7ad';
 }
 
-function renderMainSearchOption(button, label, types = [], metaText = ''){
+function renderMainSearchOption(button, label, types = [], metaText = '', priority = 0){
   const main = document.createElement('span');
   main.className = 'main-search-combobox-option-main';
   main.textContent = label;
   button.appendChild(main);
-  if (!types.length && !metaText) return;
+  if (!types.length && !metaText && !priority) return;
   const aside = document.createElement('span');
   aside.className = 'main-search-combobox-option-meta';
   types.forEach(type => {
@@ -400,6 +440,12 @@ function renderMainSearchOption(button, label, types = [], metaText = ''){
     const text = document.createElement('span');
     text.textContent = metaText;
     aside.appendChild(text);
+  }
+  if (priority){
+    const tag = document.createElement('span');
+    tag.className = 'move-priority-badge';
+    tag.textContent = `우선도 ${priority > 0 ? '+' : ''}${priority}`;
+    aside.appendChild(tag);
   }
   button.appendChild(aside);
 }
@@ -594,7 +640,7 @@ function enhanceMoveSearchSelect(select){
       const move=record.move||{};
       const button=document.createElement('button');button.type='button';button.className='main-search-combobox-option';
       const meta=[move.category,move.power?`위력 ${move.power}`:''].filter(Boolean).join(' · ');
-      renderMainSearchOption(button,record.label,move.type?[move.type]:[],meta);
+      renderMainSearchOption(button,record.label,move.type?[move.type]:[],meta,priorityNumber(move));
       button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>choose(record));list.appendChild(button);if(index===0)setActive(0);
     });
     wrapper.classList.add('open');input.setAttribute('aria-expanded','true');

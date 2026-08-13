@@ -22,6 +22,7 @@
 
   const TYPE_NAMES = Object.keys(TYPE_COLORS);
   let moveTypeByName = new Map();
+  let moveRecordByName = new Map();
   let scheduled = false;
 
   function normalize(value){
@@ -52,6 +53,48 @@
     element.classList.add(className);
     element.dataset.type = type;
     element.style.setProperty("--type-color", TYPE_COLORS[type]);
+  }
+
+  function priorityNumber(move){
+    const raw = move?.priority;
+    if (raw === '' || raw == null || raw === '-') return 0;
+    const value = Number(String(raw).replace('+','').trim());
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function priorityText(move){
+    const value = priorityNumber(move);
+    return value ? `우선도 ${value > 0 ? '+' : ''}${value}` : '';
+  }
+
+  function priorityMoveNameForElement(element){
+    const row = element.closest?.('.opponent-move-row');
+    const selected = row?.querySelector?.('.opp-move-select')?.value;
+    if (selected && moveRecordByName.has(selected)) return selected;
+    return findMoveName(element);
+  }
+
+  function decoratePriorityTags(root = document){
+    root.querySelectorAll('.my-move-effect-card, .opponent-move-row').forEach(card => {
+      const moveName = priorityMoveNameForElement(card);
+      const move = moveRecordByName.get(moveName);
+      const label = priorityText(move);
+      const head = card.matches('.opponent-move-row')
+        ? card.querySelector('.move-reference-detail .move-reference-head')
+        : card.querySelector('.move-reference-head');
+      if (!head) return;
+      let tag = head.querySelector('.move-priority-badge');
+      if (!label){
+        tag?.remove();
+        return;
+      }
+      if (!tag){
+        tag = document.createElement('span');
+        tag.className = 'move-priority-badge';
+        head.appendChild(tag);
+      }
+      if (tag.textContent !== label) tag.textContent = label;
+    });
   }
 
   function colorTypeLabels(root = document){
@@ -168,6 +211,7 @@
       .search-combobox-option-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end;color:#71818b;font-size:12px;flex:0 0 auto}
       .search-combobox-option-meta .mini-type{padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--mini-type-color) 18%,#fff);color:color-mix(in srgb,var(--mini-type-color) 72%,#263238);font-weight:800}
       .search-combobox-empty{padding:12px 10px;color:#8998a1;font-size:13px}
+      .move-priority-badge{display:inline-flex;align-items:center;width:max-content;flex:0 0 auto;padding:2px 7px!important;border:1px solid #ead18a!important;border-radius:999px!important;background:#fff4cf!important;color:#765200!important;font-size:11px!important;font-weight:800!important;line-height:1.25!important;white-space:nowrap}
       .opponent-identity-row>.search-combobox{min-width:0}
       .opponent-move-row>.search-combobox{min-width:0}
       @media(max-width:700px){
@@ -338,9 +382,9 @@
     const move = typeof moves !== "undefined"
       ? moves.find(item => item.name === record.value || item.name === record.label)
       : null;
-    if (!move) return {types:[], text:""};
+    if (!move) return {types:[], text:"", priority:0};
     const bits = [move.category, move.power ? `위력 ${move.power}` : ""].filter(Boolean);
-    return {types: move.type ? [move.type] : [], text: bits.join(" · ")};
+    return {types: move.type ? [move.type] : [], text: bits.join(" · "), priority:priorityNumber(move)};
   }
 
   function optionMeta(select, record){
@@ -355,7 +399,7 @@
     main.textContent = record.label;
     button.appendChild(main);
 
-    if (meta.types.length || meta.text){
+    if (meta.types.length || meta.text || meta.priority){
       const aside = document.createElement("span");
       aside.className = "search-combobox-option-meta";
       meta.types.forEach(type => {
@@ -369,6 +413,12 @@
         const text = document.createElement("span");
         text.textContent = meta.text;
         aside.appendChild(text);
+      }
+      if (meta.priority){
+        const tag = document.createElement("span");
+        tag.className = "move-priority-badge";
+        tag.textContent = `우선도 ${meta.priority > 0 ? '+' : ''}${meta.priority}`;
+        aside.appendChild(tag);
       }
       button.appendChild(aside);
     }
@@ -555,6 +605,7 @@
     scheduled = false;
     colorTypeLabels();
     colorMoveCards();
+    decoratePriorityTags();
     bindMoveSelects();
     enhanceBattlePage();
   }
@@ -571,6 +622,11 @@
         throw new Error("Supabase 기술 마스터 API가 아직 준비되지 않았어요.");
       }
       const moves = await window.EeveeBackend.listMoves();
+      moveRecordByName = new Map(
+        (moves || [])
+          .filter(move => move?.name)
+          .map(move => [String(move.name).trim(), move])
+      );
       moveTypeByName = new Map(
         (moves || [])
           .filter(move => move?.name && TYPE_COLORS[move?.type])

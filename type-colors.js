@@ -150,7 +150,8 @@
     });
 
     root.querySelectorAll(".moves li, .preview-moves span").forEach(element => {
-      const moveName = String(element.textContent || "").trim();
+      const nameElement = element.querySelector?.(".card-move-name");
+      const moveName = String(nameElement?.textContent || element.textContent || "").trim();
       const type = moveTypeByName.get(moveName);
       if (!type) return;
       setTypeColor(element, type, "move-type-name");

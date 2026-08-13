@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#78A4CB" />
+<title>육성 계산기 · Eevee Box</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="type-colors.css" />
+<link rel="stylesheet" href="training.css" />
+<link rel="icon" href="data:,">
+</head>
+<body class="training-page">
+<div class="login-screen" id="loginScreen" hidden>
+<form class="login-card" id="loginForm">
+<p class="eyebrow">PRIVATE ACCESS</p><h2>Eevee Box</h2>
+<p>Supabase 계정으로 로그인해 주세요.</p>
+<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+<button class="primary" type="submit">Login</button><p class="login-error" id="loginError"></p>
+</form>
+</div>
+<header class="topbar">
+<div class="brand-block">
+<p class="eyebrow">TRAINING TOOL</p>
+<div class="brand-row"><h1>육성 계산기</h1><div class="header-page-links"><a class="header-battle-link" href="index.html">Pokémon List</a><a class="header-battle-link" href="types.html">상성표</a><a class="header-battle-link" href="battle.html">Battle Page</a></div></div>
+</div>
+<div class="sync"><span id="trainingSyncDot" class="dot"></span><span id="trainingSyncText">Supabase</span><button id="logoutButton" class="logout-button" type="button">로그아웃</button></div>
+</header>
+<main class="training-main">
+<section class="training-intro">
+<div><p class="eyebrow">POKÉMON TRAINING COST</p><h2>한 마리 육성에 드는 비용을 계산해요.</h2><p>내 포켓몬을 불러오거나 현재 레벨을 직접 입력한 뒤, 필요한 육성 항목만 선택해 주세요.</p></div>
+<div class="training-rule-note">비용 규칙은 <strong>Lv.81까지</strong> 계산해요.</div>
+</section>
+
+<div class="training-layout">
+<section class="training-card training-input-card">
+<div class="training-section-head"><div><span class="training-kicker">START</span><h2>포켓몬 · 레벨</h2></div><button id="resetTraining" class="training-ghost-button" type="button">초기화</button></div>
+<label class="training-field">
+<span>내 포켓몬 불러오기 <small>선택</small></span>
+<div id="pokemonSearchBox" class="training-combobox">
+<input id="pokemonSearch" type="text" autocomplete="off" placeholder="별명이나 종류를 입력해 검색" aria-autocomplete="list" aria-expanded="false" />
+<button id="pokemonSearchToggle" class="training-combobox-toggle" type="button" aria-label="포켓몬 목록 열기">▾</button>
+<div id="pokemonSearchList" class="training-combobox-list" role="listbox"></div>
+</div>
+</label>
+<div id="selectedPokemon" class="selected-training-pokemon" hidden></div>
+<div class="training-level-row">
+<label class="training-field"><span>현재 레벨</span><div class="level-input-wrap"><span>Lv.</span><input id="currentLevel" type="number" min="1" max="81" value="1" inputmode="numeric" /></div></label>
+<div class="training-arrow" aria-hidden="true">→</div>
+<label class="training-field"><span>목표 레벨</span><div class="level-input-wrap"><span>Lv.</span><input id="targetLevel" type="number" min="1" max="81" value="81" inputmode="numeric" /></div></label>
+</div>
+<div id="levelNotice" class="training-inline-notice" hidden></div>
+
+<div class="training-divider"></div>
+<div class="training-section-head compact"><div><span class="training-kicker">OPTIONS</span><h2>추가 육성</h2></div></div>
+<label class="training-option-card">
+<input id="changeAbility" type="checkbox" />
+<span class="training-option-check" aria-hidden="true"></span>
+<span class="training-option-copy"><strong>특성 변경</strong><small>필요할 때 한 번 적용</small></span>
+<span class="training-option-price">+8,000원</span>
+</label>
+<div class="training-option-card move-purchase-option">
+<span class="training-option-icon">技</span>
+<span class="training-option-copy"><strong>기술 구매</strong><small>구매할 기술 수 · 최대 4개</small></span>
+<div class="training-stepper" aria-label="구매할 기술 수">
+<button id="moveMinus" type="button" aria-label="기술 수 줄이기">−</button>
+<input id="moveCount" type="number" min="0" max="4" value="0" inputmode="numeric" aria-label="구매할 기술 수" />
+<button id="movePlus" type="button" aria-label="기술 수 늘리기">+</button>
+</div>
+<span id="movePrice" class="training-option-price">+0원</span>
+</div>
+<label class="training-option-card">
+<input id="trainEv" type="checkbox" />
+<span class="training-option-check" aria-hidden="true"></span>
+<span class="training-option-copy"><strong>노력치 분배</strong><small>분배 여부와 관계없이 1회 비용</small></span>
+<span class="training-option-price">+2,000원</span>
+</label>
+</section>
+
+<section class="training-card training-result-card" aria-live="polite">
+<div class="training-section-head"><div><span class="training-kicker">RESULT</span><h2>육성 비용</h2></div></div>
+<div class="training-total-box">
+<span>총 육성 비용</span>
+<strong id="totalCost">30,000원</strong>
+<p id="totalSummary">Lv.1 → Lv.81 · 레벨업만 계산</p>
+</div>
+<div class="training-breakdown">
+<div class="training-breakdown-row main"><span>레벨업</span><strong id="levelCost">30,000원</strong></div>
+<div id="levelTierBreakdown" class="level-tier-breakdown"></div>
+<div class="training-breakdown-row"><span>특성 변경</span><strong id="abilityCost">0원</strong></div>
+<div class="training-breakdown-row"><span>기술 구매 <small id="moveCountLabel">0개</small></span><strong id="movesCost">0원</strong></div>
+<div class="training-breakdown-row"><span>노력치 분배</span><strong id="evCost">0원</strong></div>
+</div>
+<div class="training-rule-box">
+<strong>레벨업 단가</strong>
+<div><span>Lv.1 → 21</span><b>200원 / 레벨</b></div>
+<div><span>Lv.21 → 61</span><b>400원 / 레벨</b></div>
+<div><span>Lv.61 → 81</span><b>500원 / 레벨</b></div>
+</div>
+</section>
+</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.config.js"></script>
+<script src="supabase-data.js"></script>
+<script src="auth.js"></script>
+<script src="training.js"></script>
+</body>
+</html>

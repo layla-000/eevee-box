@@ -234,6 +234,16 @@
     titleRow.appendChild(button);
   }
 
+  function ensureBattleTrainingButton(){
+    const titleRow = document.querySelector(".battle-title-row");
+    if (!titleRow || titleRow.querySelector(".battle-training-button")) return;
+    const button = document.createElement("a");
+    button.className = "battle-home-button battle-matchup-button battle-training-button";
+    button.href = "./training.html";
+    button.textContent = "육성 계산기";
+    titleRow.appendChild(button);
+  }
+
   function applyTeraSelectColor(select){
     const type = normalize(select.value);
     select.classList.toggle("has-tera", Boolean(TYPE_COLORS[type]));
@@ -597,6 +607,7 @@
     if (!document.querySelector(".battle-main")) return;
     injectBattleEnhancementStyles();
     ensureBattleMatchupButton();
+    ensureBattleTrainingButton();
     ensureOpponentTeraSelects();
     bindStableEvInputs();
     enhanceBattleSearchSelects();

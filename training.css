@@ -10,3 +10,65 @@
 @media(max-width:900px){.training-main{padding:20px 14px 40px}.training-intro{align-items:flex-start;flex-direction:column;gap:10px}.training-layout{grid-template-columns:1fr}.training-result-card{position:static}.training-card{padding:17px;border-radius:17px}}@media(max-width:620px){.training-options-grid{grid-template-columns:1fr}.training-pokemon-card{padding:14px}}@media(max-width:520px){.training-level-row{gap:8px}.training-arrow{font-size:.85rem}.training-total-box strong{font-size:2rem}}
 
 .training-global-tools{margin-top:2px;padding:16px;border:1px solid #dfe7eb;border-radius:16px;background:#f8fafb}.training-global-tools-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}.training-global-tools-head h3{margin:3px 0 2px;font-size:1rem}.training-global-tools-head p{margin:0;color:#87969e;font-size:.75rem;line-height:1.45}.training-global-tools-head>strong{white-space:nowrap;color:#45677d;font-size:1rem}.training-global-tool-list{display:grid;gap:7px}.training-global-tool-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;border:1px solid #e1e8ec;border-radius:11px;background:#fff;color:#667a85;font-size:.8rem}.training-global-tool-row>span strong{color:#536b78}.training-result-tools{background:#f4f8fa}.training-result-tools b{color:#5b7e94!important}@media(max-width:520px){.training-global-tools-head{align-items:center}.training-global-tools-head p{display:none}}
+
+
+/* 2026-08-21: 내 포켓몬은 검색창 대신 가나다순 전체 리스트로 선택 */
+.training-pokemon-select{
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #d7e1e7;
+  border-radius:12px;
+  background:#fff;
+  color:#263238;
+  padding:11px 38px 11px 13px;
+  font:inherit;
+  font-size:.92rem;
+  font-weight:700;
+  line-height:1.4;
+  outline:none;
+  cursor:pointer;
+}
+.training-pokemon-select:focus{
+  border-color:#78a4cb;
+  box-shadow:0 0 0 3px rgba(120,164,203,.14);
+}
+
+/* 기술 구매 수량 숫자가 항상 보이도록 강제 */
+.training-stepper{
+  flex:0 0 auto;
+  min-width:112px;
+}
+.training-stepper .training-stepper-count,
+.training-stepper input[type="number"]{
+  display:block;
+  flex:0 0 48px;
+  width:48px !important;
+  min-width:48px !important;
+  height:31px;
+  box-sizing:border-box;
+  padding:0 4px !important;
+  border:0 !important;
+  border-left:1px solid #e1e8ec !important;
+  border-right:1px solid #e1e8ec !important;
+  border-radius:0 !important;
+  background:#fff !important;
+  color:#263238 !important;
+  -webkit-text-fill-color:#263238 !important;
+  opacity:1 !important;
+  text-align:center !important;
+  font-size:.95rem !important;
+  font-weight:900 !important;
+  line-height:31px !important;
+  appearance:textfield;
+  -moz-appearance:textfield;
+}
+.training-stepper .training-stepper-count:focus,
+.training-stepper input[type="number"]:focus{
+  outline:none;
+  background:#f8fbfc !important;
+}
+.training-stepper input[type="number"]::-webkit-inner-spin-button,
+.training-stepper input[type="number"]::-webkit-outer-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}

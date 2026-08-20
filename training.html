@@ -31,6 +31,43 @@
 <div class="training-section-head"><div><span class="training-kicker">TRAINING LIST</span><h2>육성할 포켓몬</h2></div><button id="resetTraining" class="training-ghost-button" type="button">전체 초기화</button></div>
 <div id="trainingPokemonList" class="training-pokemon-list"></div>
 <button id="addTrainingPokemon" class="training-add-button" type="button"><span aria-hidden="true">＋</span> 포켓몬 추가</button>
+<div class="training-global-tools">
+  <div class="training-global-tools-head">
+    <div>
+      <span class="training-kicker">SHARED ITEMS</span>
+      <h3>공용 도구 구매</h3>
+      <p>개별 포켓몬 비용과 별도로 전체 합계에만 더해져요.</p>
+    </div>
+    <strong id="globalToolsSubtotal">0원</strong>
+  </div>
+  <div class="training-global-tool-list">
+    <div class="training-global-tool-row">
+      <span><strong>3,000원</strong> 도구</span>
+      <div class="training-stepper">
+        <button type="button" data-tool-action="step" data-tool-price="3000" data-delta="-1">−</button>
+        <input id="tool3000" class="training-stepper-count" type="number" min="0" max="99" step="1" value="0" inputmode="numeric" data-tool-price="3000" aria-label="3,000원 도구 수량">
+        <button type="button" data-tool-action="step" data-tool-price="3000" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="training-global-tool-row">
+      <span><strong>5,000원</strong> 도구</span>
+      <div class="training-stepper">
+        <button type="button" data-tool-action="step" data-tool-price="5000" data-delta="-1">−</button>
+        <input id="tool5000" class="training-stepper-count" type="number" min="0" max="99" step="1" value="0" inputmode="numeric" data-tool-price="5000" aria-label="5,000원 도구 수량">
+        <button type="button" data-tool-action="step" data-tool-price="5000" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="training-global-tool-row">
+      <span><strong>7,000원</strong> 도구</span>
+      <div class="training-stepper">
+        <button type="button" data-tool-action="step" data-tool-price="7000" data-delta="-1">−</button>
+        <input id="tool7000" class="training-stepper-count" type="number" min="0" max="99" step="1" value="0" inputmode="numeric" data-tool-price="7000" aria-label="7,000원 도구 수량">
+        <button type="button" data-tool-action="step" data-tool-price="7000" data-delta="1">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </section>
 <section class="training-card training-result-card" aria-live="polite">
 <div class="training-section-head"><div><span class="training-kicker">RESULT</span><h2>전체 육성 비용</h2></div></div>

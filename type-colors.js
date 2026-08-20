@@ -215,6 +215,67 @@
       .move-priority-badge{display:inline-flex;align-items:center;width:max-content;flex:0 0 auto;padding:2px 7px!important;border:1px solid #ead18a!important;border-radius:999px!important;background:#fff4cf!important;color:#765200!important;font-size:11px!important;font-weight:800!important;line-height:1.25!important;white-space:nowrap}
       .opponent-identity-row>.search-combobox{min-width:0}
       .opponent-move-row>.search-combobox{min-width:0}
+
+      /* Opponent final stats: manual override */
+      .opp-final-stat-input{
+        width:68px!important;
+        min-width:58px!important;
+        box-sizing:border-box!important;
+        padding:6px 7px!important;
+        border:1px solid #cfdbe1!important;
+        border-radius:8px!important;
+        background:#fff!important;
+        color:#263238!important;
+        -webkit-text-fill-color:#263238!important;
+        text-align:center!important;
+        font:inherit!important;
+        font-weight:900!important;
+        line-height:1.2!important;
+        appearance:textfield;
+        -moz-appearance:textfield;
+      }
+      .opp-final-stat-input::-webkit-inner-spin-button,
+      .opp-final-stat-input::-webkit-outer-spin-button{
+        -webkit-appearance:none;
+        margin:0;
+      }
+      .opp-final-stat-input::placeholder{
+        color:#93a2aa!important;
+        -webkit-text-fill-color:#93a2aa!important;
+        opacity:1!important;
+        font-weight:800!important;
+      }
+      .opp-final-stat-input:focus{
+        outline:none!important;
+        border-color:#78a4cb!important;
+        box-shadow:0 0 0 3px rgba(120,164,203,.14)!important;
+      }
+      .opponent-stat-row-wrap.has-manual-final .opp-final-stat-input{
+        border-color:#78a4cb!important;
+        background:#f3f8fb!important;
+        color:#315a73!important;
+        -webkit-text-fill-color:#315a73!important;
+      }
+      .opp-manual-final-badge{
+        display:inline-flex;
+        align-items:center;
+        margin-left:7px;
+        padding:2px 7px;
+        border:1px solid #cadce7;
+        border-radius:999px;
+        background:#f2f7fa;
+        color:#5c7888;
+        font-size:10px;
+        font-weight:900;
+        white-space:nowrap;
+      }
+      .opp-manual-final-note{
+        display:block;
+        margin-top:7px;
+        color:#7b8d97;
+        font-size:11px;
+        line-height:1.45;
+      }
       @media(max-width:700px){
         .search-combobox-list{max-height:250px}
         .search-combobox-option{padding:10px 9px}
@@ -231,16 +292,6 @@
     button.className = "battle-home-button battle-matchup-button";
     button.href = "./types.html";
     button.textContent = "상성표";
-    titleRow.appendChild(button);
-  }
-
-  function ensureBattleTrainingButton(){
-    const titleRow = document.querySelector(".battle-title-row");
-    if (!titleRow || titleRow.querySelector(".battle-training-button")) return;
-    const button = document.createElement("a");
-    button.className = "battle-home-button battle-matchup-button battle-training-button";
-    button.href = "./training.html";
-    button.textContent = "육성 계산기";
     titleRow.appendChild(button);
   }
 
@@ -303,9 +354,19 @@
       ? calculateBattleStat(key, stat.base, value, record.level)
       : 0;
     const finalEl = rowWrap.querySelector(".opp-final-stat");
-    if (finalEl) finalEl.textContent = String(final);
+    let effectiveFinal = final;
+    if (finalEl){
+      if (finalEl.matches?.("input")){
+        finalEl.placeholder = String(final);
+        finalEl.dataset.autoFinal = String(final);
+        const manual = Number(finalEl.value);
+        if (Number.isFinite(manual) && manual > 0) effectiveFinal = Math.floor(manual);
+      } else {
+        finalEl.textContent = String(final);
+      }
+    }
     const bar = rowWrap.querySelector(".opponent-stat-bar > span");
-    if (bar) bar.style.width = `${Math.min(100, Math.max(4, final / 3.2))}%`;
+    if (bar) bar.style.width = `${Math.min(100, Math.max(4, effectiveFinal / 3.2))}%`;
     const used = Object.values(record.stats).reduce((sum, item) => sum + (Number(item?.ev) || 0), 0);
     const remaining = 510 - used;
     const total = panel.querySelector(".opp-ev-total");
@@ -343,6 +404,175 @@
     }, true);
   }
 
+
+
+  function ensureFinalStatsObject(record){
+    if (!record.finalStats || typeof record.finalStats !== "object" || Array.isArray(record.finalStats)){
+      record.finalStats = {};
+    }
+    return record.finalStats;
+  }
+
+  function manualFinalValue(record, key){
+    const value = Number(record?.finalStats?.[key]);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : "";
+  }
+
+  function updateManualFinalBar(input, record, key){
+    const rowWrap = input.closest(".opponent-stat-row-wrap");
+    if (!rowWrap) return;
+    const stat = record?.stats?.[key];
+    if (!stat) return;
+
+    const automatic = typeof calculateBattleStat === "function"
+      ? calculateBattleStat(key, stat.base, stat.ev, record.level)
+      : Number(input.dataset.autoFinal || 0);
+
+    input.placeholder = String(automatic || "");
+    input.dataset.autoFinal = String(automatic || "");
+
+    const manual = Number(input.value);
+    const effective = Number.isFinite(manual) && manual > 0 ? Math.floor(manual) : automatic;
+    rowWrap.classList.toggle("has-manual-final", Boolean(Number.isFinite(manual) && manual > 0));
+
+    const bar = rowWrap.querySelector(".opponent-stat-bar > span");
+    if (bar && effective){
+      bar.style.width = `${Math.min(100, Math.max(4, effective / 3.2))}%`;
+    }
+  }
+
+  function ensureManualFinalStatsInputs(){
+    document.querySelectorAll("#opponentTeam .opponent-slot").forEach(slot => {
+      const found = opponentRecordForSlot(slot);
+      if (!found?.record) return;
+
+      const record = found.record;
+      const finalStats = ensureFinalStatsObject(record);
+      const panel = slot.querySelector(".opponent-stats-panel");
+      if (!panel || panel.classList.contains("empty-auto-field")) return;
+
+      const columns = panel.querySelector(".opponent-stat-columns");
+      if (columns){
+        const labels = columns.querySelectorAll("span");
+        const last = labels[labels.length - 1];
+        if (last && last.textContent !== "최종(수동)") last.textContent = "최종(수동)";
+      }
+
+      const head = panel.querySelector(".opponent-stats-head");
+      if (head && !head.querySelector(".opp-manual-final-badge")){
+        const badge = document.createElement("span");
+        badge.className = "opp-manual-final-badge";
+        badge.textContent = "수동값 우선";
+        const total = head.querySelector(".opp-ev-total");
+        if (total) total.insertAdjacentElement("beforebegin", badge);
+        else head.appendChild(badge);
+      }
+
+      panel.querySelectorAll(".opponent-stat-row-wrap").forEach(rowWrap => {
+        const key = rowWrap.dataset.stat;
+        if (!key) return;
+
+        const oldFinal = rowWrap.querySelector(".opp-final-stat");
+        if (!oldFinal) return;
+
+        let input = oldFinal.matches?.("input")
+          ? oldFinal
+          : null;
+
+        if (!input){
+          const automatic = String(oldFinal.textContent || "").trim();
+          input = document.createElement("input");
+          input.type = "number";
+          input.min = "1";
+          input.max = "9999";
+          input.step = "1";
+          input.inputMode = "numeric";
+          input.className = "opp-final-stat opp-final-stat-input";
+          input.placeholder = automatic;
+          input.dataset.autoFinal = automatic;
+          input.title = "직접 입력하면 이 값을 최종 능력치로 사용합니다. 비우면 자동 계산값을 사용합니다.";
+          input.setAttribute("aria-label", `${key} 최종 능력치 수동 입력`);
+          oldFinal.replaceWith(input);
+        }
+
+        const saved = manualFinalValue(record, key);
+        if (document.activeElement !== input){
+          input.value = saved === "" ? "" : String(saved);
+        }
+
+        if (!input.dataset.manualFinalBound){
+          input.dataset.manualFinalBound = "true";
+
+          input.addEventListener("input", event => {
+            event.stopPropagation();
+            const currentFound = opponentRecordForSlot(slot);
+            if (!currentFound?.record) return;
+            const targetRecord = currentFound.record;
+            const store = ensureFinalStatsObject(targetRecord);
+            const raw = input.value.trim();
+
+            if (!raw){
+              delete store[key];
+            } else {
+              const value = Math.max(1, Math.min(9999, Math.floor(Number(raw) || 0)));
+              if (value > 0) store[key] = value;
+              else delete store[key];
+            }
+
+            updateManualFinalBar(input, targetRecord, key);
+            if (typeof persistLocal === "function") persistLocal();
+          });
+
+          input.addEventListener("blur", () => {
+            const currentFound = opponentRecordForSlot(slot);
+            if (!currentFound?.record) return;
+            const targetRecord = currentFound.record;
+            const store = ensureFinalStatsObject(targetRecord);
+
+            if (input.value.trim()){
+              const value = Math.max(1, Math.min(9999, Math.floor(Number(input.value) || 0)));
+              input.value = String(value);
+              store[key] = value;
+            } else {
+              delete store[key];
+            }
+
+            updateManualFinalBar(input, targetRecord, key);
+            if (typeof persistLocal === "function") persistLocal();
+          });
+        }
+
+        updateManualFinalBar(input, record, key);
+      });
+
+      if (!panel.querySelector(".opp-manual-final-note")){
+        const note = document.createElement("small");
+        note.className = "opp-manual-final-note";
+        note.textContent = "최종값을 직접 입력하면 수동값을 사용해요. 비워두면 레벨·기본 능력치·노력치로 자동 계산한 값을 사용합니다.";
+        const houseNote = panel.querySelector(".house-rule-note");
+        if (houseNote) houseNote.insertAdjacentElement("beforebegin", note);
+        else panel.appendChild(note);
+      }
+    });
+  }
+
+  function bindManualFinalStatSpeciesReset(){
+    if (document.documentElement.dataset.manualFinalSpeciesResetBound) return;
+    document.documentElement.dataset.manualFinalSpeciesResetBound = "true";
+
+    document.addEventListener("change", event => {
+      const select = event.target.closest?.(".opp-pokemon");
+      if (!select) return;
+      const slot = select.closest(".opponent-slot");
+      const found = opponentRecordForSlot(slot);
+      if (!found?.record) return;
+
+      // A different species should never inherit the previous Pokémon's fixed published stats.
+      found.record.finalStats = {};
+      if (typeof persistLocal === "function") persistLocal();
+      requestAnimationFrame(schedulePaint);
+    }, true);
+  }
 
   function searchKey(value){
     return String(value || "")
@@ -607,9 +837,10 @@
     if (!document.querySelector(".battle-main")) return;
     injectBattleEnhancementStyles();
     ensureBattleMatchupButton();
-    ensureBattleTrainingButton();
     ensureOpponentTeraSelects();
     bindStableEvInputs();
+    bindManualFinalStatSpeciesReset();
+    ensureManualFinalStatsInputs();
     enhanceBattleSearchSelects();
   }
 
